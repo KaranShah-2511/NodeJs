@@ -1,0 +1,27 @@
+{
+  "name": "node-js",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KaranShah-2511/NodeJs.git"
+  },
+  "author": "karan@shah",
+  "license": "ISC",
+  "type":"module",
+  "bugs": {
+    "url": "https://github.com/KaranShah-2511/NodeJs/issues"
+  },
+  "homepage": "https://github.com/KaranShah-2511/NodeJs#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "mongoose": "^6.3.5",
+    "nodemon": "^2.0.16"
+  }
+}
