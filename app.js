@@ -3,20 +3,23 @@ dotenv.config()
 import express from 'express'
 import cors from 'cors'
 import connectDB from './config/connectdb.js'
+import tasks from './routes/tasks.js'
 
 const app = express()
 const port = process.env.PORT
 const DATABASE_URL = process.env.DATABASE_URL
 
 app.use(cors())
+app.use(express.json())
 
-app.get('/hello', (req, res) => {
-    console.log('Hello World')
-    res.send('Hello World')
-})
-
-// Connect Database
 connectDB(DATABASE_URL)
+
+// app.get('/hello', (req, res) => {
+//     res.send('Hello World')
+// })
+
+app.use('/api/v1/tasks', tasks)
+
 
 
 app.listen(port, () => {
