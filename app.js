@@ -4,7 +4,8 @@ import express from 'express'
 import cors from 'cors'
 import connectDB from './config/connectdb.js'
 import tasks from './routes/tasks.js'
-import notFound from './middlerware/notFound.js'
+import notFound from './middleware/notFound.js'
+import errorHandler from './middleware/error.js'
 
 const app = express()
 const port = process.env.PORT
@@ -21,6 +22,7 @@ connectDB(DATABASE_URL)
 
 app.use('/api/v1/tasks', tasks)
 app.use(notFound)
+app.use(errorHandler)
 
 
 
