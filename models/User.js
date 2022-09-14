@@ -1,7 +1,7 @@
 // import mongoose from 'mongoose ';
 import mongoose from 'mongoose';
 import jwt from "jsonwebtoken"
-import  bcrypt from "bcrypt"
+import bcrypt from "bcrypt"
 
 const UserSchema = new mongoose.Schema({
     fullName: {
@@ -17,13 +17,14 @@ const UserSchema = new mongoose.Schema({
         required: true
     },
     hash_password: {
-        type: String
+        type: String,
     },
     created: {
         type: Date,
         default: Date.now
     },
     UpdatedDate: Date,
+    Token: String,
 })
 
 UserSchema.methods.comparePassword = function (password) {

@@ -28,8 +28,30 @@ class Users {
             if (!user || !user.comparePassword(req.body.password)) {
                 return res.status(401).json({ message: 'Authentication failed. Invalid user or password.' });
             }
-            console.log('user', user);
-            return res.json({ token: jwt.sign({ email: user.email, fullName: user.fullName, _id: user._id }, 'RESTFULAPIs') });
+            const updates = {}
+            updates["Token"] = jwt.sign({ email: user.email, fullName: user.fullName, _id: user._id }, 'RESTFULAPIs',  {
+                expiresIn: '5s',
+            });
+            User.findOneAndUpdate({ email: req.body.email }, {
+                $set: updates
+            }, { new: true })
+            .then((data) => {
+                User.aggregate([{
+                    $match: {
+                        _id: data._id 
+                    },
+                },
+                {
+                    $project: {
+                        Email: '$email',
+                        FullName: '$fullName',
+                        Token: '$Token'
+                    }
+                }], (data) =>  {
+                    res.status(200).json(data)
+                })
+            })
+
         });
     })
 
