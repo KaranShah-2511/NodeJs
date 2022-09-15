@@ -12,16 +12,18 @@
   },
   "author": "karan@shah",
   "license": "ISC",
-  "type":"module",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/KaranShah-2511/NodeJs/issues"
   },
   "homepage": "https://github.com/KaranShah-2511/NodeJs#readme",
   "dependencies": {
+    "bcrypt": "^5.0.1",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.1",
+    "dotenv": "^16.0.2",
     "express": "^4.18.1",
-    "mongoose": "^6.3.5",
-    "nodemon": "^2.0.16"
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.6.0",
+    "save": "^2.5.0"
   }
 }
