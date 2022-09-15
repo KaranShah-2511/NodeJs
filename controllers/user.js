@@ -3,7 +3,6 @@ import asyncWrapper from "../middleware/async.js"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
 
-
 class Users {
     static register = asyncWrapper(async (req, res) => {
         var newUser = new User(req.body);
@@ -58,7 +57,6 @@ class Users {
     static upload = asyncWrapper(asyncWrapper((req, res) => {
         res.send("success")
     }))
-
 }
 
 export default Users;
