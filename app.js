@@ -21,8 +21,8 @@ connectDB(DATABASE_URL)
 //     res.send('Hello World')
 // })
 
-app.use('/api/v1/tasks', tasks)
-app.use('/api/v1/auth',users)
+app.use('/tasks', tasks)
+app.use('/auth',users)
 app.use(notFound)
 app.use(errorHandler)
 
