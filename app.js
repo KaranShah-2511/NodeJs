@@ -7,6 +7,7 @@ import tasks from './routes/tasks.js'
 import notFound from './middleware/notFound.js'
 import errorHandler from './middleware/error.js'
 import users from './routes/user.js'
+import posts from './routes/post.js'
 
 const app = express()
 const port = process.env.PORT
@@ -23,6 +24,7 @@ connectDB(DATABASE_URL)
 
 app.use('/tasks', tasks)
 app.use('/auth',users)
+app.use('/post',posts)
 app.use(notFound)
 app.use(errorHandler)
 
