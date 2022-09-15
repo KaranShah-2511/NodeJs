@@ -60,8 +60,34 @@ class Posts {
             }]).then((s) => res.send(s))
     });
 
+    static getUserPosts = asyncWrapper(async (req, res) => {
+        Post.aggregate(
+            [
+                {
+                    $match: {
+                        createdBy: req.params.id
+                    }
+                },
+                {
+                    $project: {
+                        title: '$title',
+                        description: '$description',
+                        tags: '$tags',
+                        createdBy: '$createdBy',
+                        created: "$created"
+                    }
+                },
+                {
+                    $sort: {
+                        created: -1
+                    }
+                }
+            ]
+        ).then((s) => res.send(s))
+    });
 
-    
+
+
 }
 
 export default Posts;

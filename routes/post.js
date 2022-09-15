@@ -5,7 +5,7 @@ import Auth from "../middleware/authentication.js"
 
 router.post('/', Auth, Posts.create);
 router.get('/', Auth, Posts.getPosts);
-// router.get('/:id', Auth, Posts.getUserPosts);
+router.get('/:id', Auth, Posts.getUserPosts);
 
 
 
