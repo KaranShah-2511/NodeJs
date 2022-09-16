@@ -1,4 +1,5 @@
 import Post from "../models/Post.js"
+import Like from "../models/Like.js"
 import asyncWrapper from "../middleware/async.js"
 
 class Posts {
@@ -19,10 +20,10 @@ class Posts {
     })
 
     static getPosts = asyncWrapper(async (req, res) => {
-        let filter = { "$match": {} };
+        let filter = { "$match": { $and: [{ status: true }] } };
         if (req.body.Searchby != '' && req.body.Searchby != null) {
             let regex = new RegExp(req.body.Searchby, 'i');
-            filter = { "$match": { $and: [{ $or: [{ "title": regex }, { "description": regex }, { "tags": regex }] }] } }
+            filter = { "$match": { $and: [{ $or: [{ "title": regex }, { "description": regex }, { "tags": regex }] }, { status: true }] } }
         }
         Post.aggregate([filter,
             {
@@ -32,7 +33,8 @@ class Posts {
                     description: '$description',
                     tags: '$tags',
                     createdBy: '$createdBy',
-                    created: "$created"
+                    created: "$created",
+                    status: "$status"
                 }
             },
             { $sort: { created: -1 } }
@@ -49,7 +51,8 @@ class Posts {
                         description: '$description',
                         tags: '$tags',
                         createdBy: '$createdBy',
-                        created: "$created"
+                        created: "$created",
+                        status: "$status"
                     }
                 },
                 { $sort: { created: -1 } }
@@ -64,11 +67,72 @@ class Posts {
             tags: req.body.tags || [],
             createdBy: req.body.createdBy,
             UpdatedDate: new Date(),
+            status: req.body.status,
         }, { new: true }).then((newPost) => res.send(newPost))
     })
 
     static deletePost = asyncWrapper(async (req, res) => {
         Post.findByIdAndDelete({ _id: req.params.postId }, { new: true }).then((dl) => res.send(dl))
+    })
+
+    static likePost = asyncWrapper(async (req, res) => {
+
+        Like.aggregate([
+            {
+                $match: {
+                    $and: [
+                        {
+                            postId: req.body.postId
+                        },
+                        {
+                            likedBy: req.body.likedBy
+                        }
+                    ]
+                }
+            },
+
+        ]).then(async (s) => {
+            if (s.length) {
+                if (-1 <= req.body.status && req.body.status <= 1) {
+                    if (s[0].status != req.body.status && (-1 <= req.body.status <= 1)) {
+                        Like.findOneAndDelete({ likedBy: req.body.likedBy, postId: req.body.postId }).then(async (data) => {
+                            const like = new Like({
+                                likedBy: req.body.likedBy,
+                                postId: req.body.postId,
+                                status: req.body.status
+                            });
+                            try {
+                                await like.save();
+                                res.send(like);
+                            } catch (err) {
+                                return res.status(400).send({
+                                    message: err
+                                });
+                            }
+                        })
+                    }
+                    else {
+                        res.send("You can not send same data")
+                    }
+                }
+                else{
+                    res.send("Not valid data")
+                }
+            }
+            else {
+                const like = new Like({
+                    likedBy: req.body.likedBy,
+                    postId: req.body.postId,
+                    status: req.body.status
+                });
+                try {
+                    await like.save();
+                    res.send(like);
+                } catch (err) {
+                    console.log(err);
+                }
+            }
+        })
     })
 }
 

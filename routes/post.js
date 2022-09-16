@@ -8,6 +8,7 @@ router.get('/', Auth, Posts.getPosts);
 router.get('/getallposts/:userId', Auth, Posts.getUserPosts);
 router.post('/updatepost/:postId', Auth, Posts.updatePost);
 router.delete('/deletepost/:postId', Auth, Posts.deletePost);
+router.post('/likepost/:postId', Auth, Posts.likePost);
 
 
 

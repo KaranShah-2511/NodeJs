@@ -9,22 +9,26 @@ const PostSchema = new mongoose.Schema({
     description: {
         type: String,
     },
-    createdBy:{
-        type:  String,
+    createdBy: {
+        type: String,
         require: true
     },
     created: {
         type: Date,
         default: Date.now
     },
-    tags:{
+    tags: {
         type: Array,
         "default": []
     },
-    UpdatedDate:{
+    UpdatedDate: {
         type: Date,
         default: Date.now
     },
+    status: {
+        type: Boolean,
+        default: true
+    }
 })
 
 const Post = mongoose.model('Post', PostSchema);
