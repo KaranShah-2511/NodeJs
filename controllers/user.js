@@ -54,9 +54,7 @@ class Users {
         });
     })
 
-    static upload = asyncWrapper(asyncWrapper((req, res) => {
-        res.send("success")
-    }))
+
 }
 
 export default Users;

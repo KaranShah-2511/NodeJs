@@ -35,7 +35,8 @@ class Posts {
                     createdBy: '$createdBy',
                     created: "$created",
                     status: "$status",
-                    likes:"$likes"
+                    likes: "$likes",
+                    dislikes: "$dislikes"
                 }
             },
             { $sort: { created: -1 } }
@@ -54,7 +55,8 @@ class Posts {
                         createdBy: '$createdBy',
                         created: "$created",
                         status: "$status",
-                        likes:"$likes"
+                        likes: "$likes",
+                        dislikes: "$dislikes"
                     }
                 },
                 { $sort: { created: -1 } }
@@ -80,19 +82,7 @@ class Posts {
     static likePost = asyncWrapper(async (req, res) => {
 
         Like.aggregate([
-            {
-                $match: {
-                    $and: [
-                        {
-                            postId: req.body.postId
-                        },
-                        {
-                            likedBy: req.body.likedBy
-                        }
-                    ]
-                }
-            },
-
+            { $match: { $and: [{ postId: req.body.postId }, { likedBy: req.body.likedBy }] } },
         ]).then(async (s) => {
             if (s.length) {
                 if (-1 <= req.body.status && req.body.status <= 1) {
@@ -105,10 +95,17 @@ class Posts {
                             });
                             try {
                                 await like.save().then(async (i) => {
-                                    await Post.findByIdAndUpdate(req.body.postId,
-                                        ((req.body.status === 1) ? { $inc: { likes: 1 } } : { $inc: { likes: -1 } })
-                                    )
-                                });;
+                                    if (req.body.status === 1) {
+                                        await Post.findByIdAndUpdate(req.body.postId,
+                                            ({ $inc: { likes: 1, dislikes: -1 } })
+                                        )
+                                    }
+                                    else {
+                                        await Post.findByIdAndUpdate(req.body.postId,
+                                            ({ $inc: { dislikes: 1, likes: -1 } })
+                                        )
+                                    }
+                                });
                                 res.send(like);
                             } catch (err) {
                                 return res.status(400).send({
@@ -117,13 +114,9 @@ class Posts {
                             }
                         })
                     }
-                    else {
-                        res.send("You can not send same data")
-                    }
+                    else { res.send("You can not send same data") }
                 }
-                else {
-                    res.send("Not valid data")
-                }
+                else { res.send("Not valid data") }
             }
             else {
                 const like = new Like({
@@ -131,14 +124,18 @@ class Posts {
                     postId: req.body.postId,
                     status: req.body.status
                 });
-                // const oldlikes = await Post.findById(req.body.postId);
-                // console.log('oldlikes', oldlikes.likes)
-
                 try {
                     await like.save().then(async (i) => {
-                        await Post.findByIdAndUpdate(req.body.postId,
-                            ((req.body.status === 1) ? { $inc: { likes: 1 } } : { $inc: { likes: -1 } })
-                        )
+                        if (req.body.status === 1) {
+                            await Post.findByIdAndUpdate(req.body.postId,
+                                ({ $inc: { likes: 1 } })
+                            )
+                        }
+                        else {
+                            await Post.findByIdAndUpdate(req.body.postId,
+                                ({ $inc: { dislikes: 1 } })
+                            )
+                        }
                     });
                     res.send(like);
                 } catch (err) {
