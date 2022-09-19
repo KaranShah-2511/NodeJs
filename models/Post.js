@@ -28,6 +28,10 @@ const PostSchema = new mongoose.Schema({
     status: {
         type: Boolean,
         default: true
+    },
+    likes: {
+        type: Number,
+        default: 0
     }
 })
 
