@@ -84,13 +84,11 @@ class Posts {
         Like.aggregate([
             { $match: { $and: [{ postId: req.body.postId }, { likedBy: req.body.likedBy }] } },
         ]).then(async (s) => {
-
             if (s.length) {
-                let oldstatus = s[0].status;
-                if (-1 <= req.body.status && req.body.status <= 1) {
-
-                    if (s[0].status != req.body.status && (-1 <= req.body.status <= 1)) {
-
+                let oldStatus = s[0].status;
+                let status = req.body.status;
+                if (-1 <= status && status <= 1) {
+                    if (s[0].status != status && (-1 <= status <= 1)) {
                         Like.findOneAndDelete({ likedBy: req.body.likedBy, postId: req.body.postId }).then(async (data) => {
                             const like = new Like({
                                 likedBy: req.body.likedBy,
@@ -99,23 +97,19 @@ class Posts {
                             });
                             try {
                                 await like.save().then(async (i) => {
-
-                                    if (req.body.status === 1) {
-                                    
+                                    if (status === 1) {
                                         await Post.findByIdAndUpdate(req.body.postId,
-                                            ({ $inc: { likes: 1, dislikes: -1 } })
+                                            ((oldStatus != 0) ? { $inc: { likes: 1, dislikes: -1 } } : { $inc: { likes: 1 } })
                                         )
                                     }
-                                    else if (req.body.status === 0) {
-                                    
+                                    else if (status === 0) {
                                         await Post.findByIdAndUpdate(req.body.postId,
-                                            ((oldstatus === 1) ? { $inc: { likes: -1 } } : { $inc: { dislikes: -1 } })
+                                            ((oldStatus === 1) ? { $inc: { likes: -1 } } : { $inc: { dislikes: -1 } })
                                         )
                                     }
                                     else {
-                                    
                                         await Post.findByIdAndUpdate(req.body.postId,
-                                            ({ $inc: { dislikes: 1, likes: -1 } })
+                                            ((oldStatus != 0) ? { $inc: { dislikes: 1, likes: -1 } } : { $inc: { dislikes: 1 } })
                                         )
                                     }
                                 });
@@ -135,16 +129,16 @@ class Posts {
                 const like = new Like({
                     likedBy: req.body.likedBy,
                     postId: req.body.postId,
-                    status: req.body.status
+                    status: status
                 });
                 try {
                     await like.save().then(async (i) => {
-                        if (req.body.status === 1) {
+                        if (status === 1) {
                             await Post.findByIdAndUpdate(req.body.postId,
                                 ({ $inc: { likes: 1 } })
                             )
                         }
-                        else if (req.body.status === -1) {
+                        else if (status === -1) {
                             await Post.findByIdAndUpdate(req.body.postId,
                                 ({ $inc: { dislikes: 1 } })
                             )

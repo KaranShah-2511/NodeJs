@@ -14,6 +14,8 @@ const LikeSchema = new mongoose.Schema({
         type: Number,
         enum: [-1, 0, 1]
     }
+},{
+    versionKey: false
 })
 
 const Like = mongoose.model('Like', LikeSchema);

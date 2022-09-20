@@ -37,6 +37,8 @@ const PostSchema = new mongoose.Schema({
         type: Number,
         default: 0
     }
+},{
+    versionKey: false
 })
 
 const Post = mongoose.model('Post', PostSchema);

@@ -25,6 +25,8 @@ const UserSchema = new mongoose.Schema({
     },
     UpdatedDate: Date,
     Token: String,
+}, {
+    versionKey: false   // __v: 0 hide 
 })
 
 UserSchema.methods.comparePassword = function (password) {

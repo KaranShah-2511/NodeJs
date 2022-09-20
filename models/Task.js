@@ -10,6 +10,8 @@ const TaskSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+},{
+    versionKey: false
 })
 
 const Task = mongoose.model('Task', TaskSchema);
