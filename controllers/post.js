@@ -1,5 +1,6 @@
 import Post from "../models/Post.js"
 import Like from "../models/Like.js"
+import Bookmark from "../models/Bookmark.js"
 import asyncWrapper from "../middleware/async.js"
 
 class Posts {
@@ -151,6 +152,49 @@ class Posts {
             }
         })
     })
+
+    static bookmark = asyncWrapper(async (req, res) => {
+        Bookmark.aggregate([{ $match: { userId: req.body.userId, postId: req.body.postId } }
+        ]).then(async (data) => {
+
+            if (data.length && req.body.isBookmark === false) {
+                Bookmark.findByIdAndDelete(data[0]._id).then(async (i) => {
+                    res.send("delete bookmark")
+                })
+            }
+            else if (data.length && data[0].isBookmark === req.body.isBookmark) {
+                res.send("You can not pass same data")
+            }
+            else {
+                if (req.body.isBookmark === true) {
+                    const bookmark = new Bookmark({
+                        userId: req.body.userId,
+                        postId: req.body.postId,
+                        isBookmark: req.body.isBookmark,
+                    });
+                    try {
+                        await bookmark.save();
+                        res.send(bookmark);
+                    } catch (err) {
+                        console.log(err);
+                    }
+                }
+                else {
+                    res.send("Wrong data")
+                }
+
+            }
+        })
+
+
+    })
+
+    static userBookmark = asyncWrapper(async (req, res) => {
+        Bookmark.find({ userId: req.params.userId }).populate('postId').then((data) => {
+            res.send(data)
+        })
+    })
 }
 
 export default Posts;
+
