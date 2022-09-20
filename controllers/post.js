@@ -84,9 +84,9 @@ class Posts {
         Like.aggregate([
             { $match: { $and: [{ postId: req.body.postId }, { likedBy: req.body.likedBy }] } },
         ]).then(async (s) => {
+            let status = req.body.status;
             if (s.length) {
                 let oldStatus = s[0].status;
-                let status = req.body.status;
                 if (-1 <= status && status <= 1) {
                     if (s[0].status != status && (-1 <= status <= 1)) {
                         Like.findOneAndDelete({ likedBy: req.body.likedBy, postId: req.body.postId }).then(async (data) => {
