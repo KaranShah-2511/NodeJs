@@ -10,13 +10,17 @@ const BookmarkSchema = new mongoose.Schema({
     },
     postId: {
         type: Schema.Types.ObjectId,
-         ref: 'Post'
+        ref: 'Post'
     },
-    isBookmark:{
+    isBookmark: {
         type: Boolean,
-        default:false
+        default: false
+    },
+    status: {
+        type: Boolean,
+        default: true
     }
-},{
+}, {
     versionKey: false
 })
 

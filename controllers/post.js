@@ -2,6 +2,7 @@ import Post from "../models/Post.js"
 import Like from "../models/Like.js"
 import Bookmark from "../models/Bookmark.js"
 import asyncWrapper from "../middleware/async.js"
+import delay from "../middleware/delay.js"
 
 class Posts {
     static create = asyncWrapper(async (req, res) => {
@@ -16,7 +17,7 @@ class Posts {
             await post.save();
             res.send(post);
         } catch (err) {
-            console.log(err);
+            res.send(err);
         }
     })
 
@@ -66,14 +67,35 @@ class Posts {
     });
 
     static updatePost = asyncWrapper(async (req, res) => {
-        Post.findByIdAndUpdate({ _id: req.params.postId }, {
+        await Post.findByIdAndUpdate({ _id: req.params.postId }, {
             title: req.body.title,
             description: req.body.description,
             tags: req.body.tags || [],
             createdBy: req.body.createdBy,
             UpdatedDate: new Date(),
             status: req.body.status,
-        }, { new: true }).then((newPost) => res.send(newPost))
+        }, { new: true })
+            .then(async (newPost) => {
+                await delay(500);
+                Bookmark.aggregate([
+                    {
+                        $match: {
+                            postId: req.params.postId
+                        }
+                    }
+                ]).then(async (j) => {
+                    await delay(500);
+                    j.map(async (item) => {
+                        // Bookmark.findByIdAndUpdate({item._id }, { status: req.body.status }, { new: true })
+                        await Bookmark.findByIdAndUpdate(item._id, { status: req.body.status }, { new: true });
+                    })
+                })
+
+                res.send(newPost)
+            })
+            .catch((err) => {
+                res.send(err)
+            })
     })
 
     static deletePost = asyncWrapper(async (req, res) => {
@@ -190,10 +212,16 @@ class Posts {
     })
 
     static userBookmark = asyncWrapper(async (req, res) => {
-        Bookmark.find({ userId: req.params.userId }).populate('postId').then((data) => {
+        Bookmark.find({ userId: req.params.userId, status: true }).then((data) => {
             res.send(data)
         })
     })
+
+    // static userBookmark = asyncWrapper(async (req, res) => {
+    //     Bookmark.find({ userId: req.params.userId }).populate('postId').then((data) => {
+    //         res.send(data)
+    //   })
+    // })
 }
 
 export default Posts;
