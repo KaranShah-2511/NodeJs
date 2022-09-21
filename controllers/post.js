@@ -12,6 +12,7 @@ class Posts {
             tags: req.body.tags || [],
             createdBy: req.body.createdBy,
             UpdatedDate: new Date(),
+            imagePath: req.file.path
         });
         try {
             await post.save();
@@ -217,6 +218,9 @@ class Posts {
         })
     })
 
+    static uploadImage = asyncWrapper(async (req, res) => {
+        res.send(req.file)
+    })
     // static userBookmark = asyncWrapper(async (req, res) => {
     //     Bookmark.find({ userId: req.params.userId }).populate('postId').then((data) => {
     //         res.send(data)

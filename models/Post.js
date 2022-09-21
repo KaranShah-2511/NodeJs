@@ -36,8 +36,11 @@ const PostSchema = new mongoose.Schema({
     dislikes: {
         type: Number,
         default: 0
+    },
+    imagePath: {
+        type: String,
     }
-},{
+}, {
     versionKey: false
 })
 
