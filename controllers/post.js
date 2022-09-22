@@ -12,7 +12,7 @@ class Posts {
             tags: req.body.tags || [],
             createdBy: req.body.createdBy,
             UpdatedDate: new Date(),
-            imagePath: req.file.path
+            imagePath: req.file.filename
         });
         try {
             await post.save();
@@ -77,7 +77,7 @@ class Posts {
             createdBy: req.body.createdBy,
             UpdatedDate: new Date(),
             status: req.body.status,
-            imagePath: req.file.path
+            imagePath: req.file.filename
         }, { new: true })
             .then(async (newPost) => {
                 await delay(500);
