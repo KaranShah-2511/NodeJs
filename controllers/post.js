@@ -39,7 +39,8 @@ class Posts {
                     created: "$created",
                     status: "$status",
                     likes: "$likes",
-                    dislikes: "$dislikes"
+                    dislikes: "$dislikes",
+                    imagePath: "$imagePath"
                 }
             },
             { $sort: { created: -1 } }
@@ -59,7 +60,8 @@ class Posts {
                         created: "$created",
                         status: "$status",
                         likes: "$likes",
-                        dislikes: "$dislikes"
+                        dislikes: "$dislikes",
+                        imagePath: "$imagePath"
                     }
                 },
                 { $sort: { created: -1 } }
@@ -75,6 +77,7 @@ class Posts {
             createdBy: req.body.createdBy,
             UpdatedDate: new Date(),
             status: req.body.status,
+            imagePath: req.file.path
         }, { new: true })
             .then(async (newPost) => {
                 await delay(500);
@@ -221,6 +224,15 @@ class Posts {
     static uploadImage = asyncWrapper(async (req, res) => {
         res.send(req.file)
     })
+
+    static uploadMultipleImage = asyncWrapper(async (req, res) => {
+        res.send(req.files)
+    })
+
+
+
+
+
     // static userBookmark = asyncWrapper(async (req, res) => {
     //     Bookmark.find({ userId: req.params.userId }).populate('postId').then((data) => {
     //         res.send(data)

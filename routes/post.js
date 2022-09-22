@@ -5,15 +5,23 @@ import Auth from "../middleware/authentication.js";
 import upload from '../middleware/fileUpload.js';
 
 router.post('/', Auth, upload.single('image'), Posts.create);
+
 router.get('/', Auth, Posts.getPosts);
+
 router.get('/getallposts/:userId', Auth, Posts.getUserPosts);
-router.post('/updatepost/:postId', Auth, Posts.updatePost);
+
+router.post('/updatepost/:postId', Auth, upload.single('image'), Posts.updatePost);
+
 router.delete('/deletepost/:postId', Auth, Posts.deletePost);
+
 router.post('/likepost/:postId', Auth, Posts.likePost);
+
 router.post('/bookmark', Auth, Posts.bookmark);
+
 router.get('/bookmark/:userId', Auth, Posts.userBookmark);
+
 router.post('/singleimage', Auth, upload.single('image'), Posts.uploadImage);
 
-
+router.post('/multipleimage', Auth, upload.array('image', 4), Posts.uploadMultipleImage);
 
 export default router;
