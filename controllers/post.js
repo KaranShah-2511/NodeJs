@@ -12,7 +12,7 @@ class Posts {
             tags: req.body.tags || [],
             createdBy: req.body.createdBy,
             UpdatedDate: new Date(),
-            imagePath: req.file.filename
+            // imagePath: req.file.filename
         });
         try {
             await post.save();
@@ -28,7 +28,22 @@ class Posts {
             let regex = new RegExp(req.body.Searchby, 'i');
             filter = { "$match": { $and: [{ $or: [{ "title": regex }, { "description": regex }, { "tags": regex }] }, { status: true }] } }
         }
-        Post.aggregate([filter,
+        Post.aggregate([
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'createdBy',
+                    foreignField: '_id',
+                    as: 'user'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$user',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            filter,
             {
                 $project: {
                     _id: "$_id",
@@ -40,7 +55,11 @@ class Posts {
                     status: "$status",
                     likes: "$likes",
                     dislikes: "$dislikes",
-                    imagePath: "$imagePath"
+                    name: "$user.fullName",
+                    email: "$user.email",
+                    // imagePath: "$imagePath",
+
+
                 }
             },
             { $sort: { created: -1 } }
@@ -61,7 +80,7 @@ class Posts {
                         status: "$status",
                         likes: "$likes",
                         dislikes: "$dislikes",
-                        imagePath: "$imagePath"
+                        // imagePath: "$imagePath"
                     }
                 },
                 { $sort: { created: -1 } }
@@ -77,7 +96,7 @@ class Posts {
             createdBy: req.body.createdBy,
             UpdatedDate: new Date(),
             status: req.body.status,
-            imagePath: req.file.filename
+            // imagePath: req.file.filename
         }, { new: true })
             .then(async (newPost) => {
                 await delay(500);

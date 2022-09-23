@@ -4,13 +4,15 @@ import Posts from "../controllers/post.js";
 import Auth from "../middleware/authentication.js";
 import upload from '../middleware/fileUpload.js';
 
-router.post('/', Auth, upload.single('image'), Posts.create);
+router.post('/', Auth, Posts.create);
+// router.post('/', Auth, upload.single('image'), Posts.create);
 
 router.get('/', Auth, Posts.getPosts);
 
 router.get('/getallposts/:userId', Auth, Posts.getUserPosts);
 
-router.post('/updatepost/:postId', Auth, upload.single('image'), Posts.updatePost);
+router.post('/updatepost/:postId', Posts.updatePost);
+// router.post('/updatepost/:postId', Auth, upload.single('image'), Posts.updatePost);
 
 router.delete('/deletepost/:postId', Auth, Posts.deletePost);
 

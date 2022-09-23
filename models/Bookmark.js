@@ -9,7 +9,7 @@ const BookmarkSchema = new mongoose.Schema({
         required: true
     },
     postId: {
-        type: Schema.Types.ObjectId,
+        type: String,
         ref: 'Post'
     },
     isBookmark: {
