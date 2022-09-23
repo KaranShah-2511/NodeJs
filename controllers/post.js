@@ -3,6 +3,9 @@ import Like from "../models/Like.js"
 import Bookmark from "../models/Bookmark.js"
 import asyncWrapper from "../middleware/async.js"
 import delay from "../middleware/delay.js"
+import mongoose from 'mongoose';
+import Comment from "../models/Comment.js"
+
 
 class Posts {
     static create = asyncWrapper(async (req, res) => {
@@ -58,8 +61,6 @@ class Posts {
                     name: "$user.fullName",
                     email: "$user.email",
                     // imagePath: "$imagePath",
-
-
                 }
             },
             { $sort: { created: -1 } }
@@ -69,7 +70,7 @@ class Posts {
     static getUserPosts = asyncWrapper(async (req, res) => {
         Post.aggregate(
             [
-                { $match: { createdBy: req.params.userId } },
+                { $match: { createdBy: (mongoose.Types.ObjectId(req.params.userId)) } },
                 {
                     $project: {
                         title: '$title',
@@ -234,11 +235,11 @@ class Posts {
 
     })
 
-    static userBookmark = asyncWrapper(async (req, res) => {
-        Bookmark.find({ userId: req.params.userId, status: true }).then((data) => {
-            res.send(data)
-        })
-    })
+    // static userBookmark = asyncWrapper(async (req, res) => {
+    //     Bookmark.find({ userId: req.params.userId, status: true }).then((data) => {
+    //         res.send(data)
+    //     })
+    // })
 
     static uploadImage = asyncWrapper(async (req, res) => {
         res.send(req.file)
@@ -248,15 +249,25 @@ class Posts {
         res.send(req.files)
     })
 
+    static userBookmark = asyncWrapper(async (req, res) => {
+        Bookmark.find({ userId: req.params.userId, status: true }).populate('postId').then((data) => {
+            res.send(data)
+        })
+    })
 
-
-
-
-    // static userBookmark = asyncWrapper(async (req, res) => {
-    //     Bookmark.find({ userId: req.params.userId }).populate('postId').then((data) => {
-    //         res.send(data)
-    //   })
-    // })
+    static comment = asyncWrapper(async (req, res) => {
+        const comment = new Comment({
+            userId: req.body.userId,
+            postId: req.body.postId,
+            comment: req.body.comment,
+        });
+        try {
+            await comment.save();
+            res.send(comment);
+        } catch (err) {
+            console.log(err);
+        }
+    })
 }
 
 export default Posts;

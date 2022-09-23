@@ -22,6 +22,8 @@ router.post('/bookmark', Auth, Posts.bookmark);
 
 router.get('/bookmark/:userId', Auth, Posts.userBookmark);
 
+router.post('/comment', Auth, Posts.comment);
+
 router.post('/singleimage', Auth, upload.single('image'), Posts.uploadImage);
 
 router.post('/multipleimage', Auth, upload.array('image', 4), Posts.uploadMultipleImage);
