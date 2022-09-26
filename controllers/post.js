@@ -2,11 +2,12 @@ import Post from "../models/Post.js"
 import Like from "../models/Like.js"
 import Bookmark from "../models/Bookmark.js"
 import asyncWrapper from "../middleware/async.js"
-import delay from "../middleware/delay.js"
+import delay from "../common/Delay.js"
 import mongoose from 'mongoose';
 import Comment from "../models/Comment.js"
 import Report from "../models/Report.js"
-
+import Response from "../common/Response.js"
+import Constants from "../common/Constants.js"
 
 class Posts {
     static create = asyncWrapper(async (req, res) => {
@@ -20,23 +21,38 @@ class Posts {
         });
         try {
             await post.save();
-            res.send(post);
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
+            return res.send(data);
         } catch (err) {
-            res.send(err);
+            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+            return res.send(data);
         }
     })
 
     static getSinglePost = asyncWrapper(async (req, res) => {
         const post = await Post.findById(req.params.postId);
-        res.send(post);
+        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
+        return res.send(data);
     })
 
     static getPosts = asyncWrapper(async (req, res) => {
         let filter = { "$match": { $and: [{ status: true }] } };
+        const searchField = ["title", "description", "tags"];
+    
         if (req.body.Searchby != '' && req.body.Searchby != null) {
-            let regex = new RegExp(req.body.Searchby, 'i');
-            filter = { "$match": { $and: [{ $or: [{ "title": regex }, { "description": regex }, { "tags": regex }] }, { status: true }] } }
+            // let regex = new RegExp(req.body.Searchby, 'i');
+            // filter = { "$match": { $and: [{ $or: [{ "title": regex }, { "description": regex }, { "tags": regex }] }, { status: true }] } }
+            const Searchbys = (typeof req.body.Searchby === 'object') ? req.body.Searchby : [req.body.Searchby];
+            const matchField = searchField.map((field) => {
+                return { [field]: { "$regex": Searchbys.join('|'), "$options": 'i' } };
+            });
+            if (filter['$match']['$and'] !== undefined) {
+                filter['$match']['$and'].push({ $or: matchField });
+            } else {
+                filter = { "$match": { $and: [{ $or: matchField }] } }
+            }
         }
+
         Post.aggregate([
             {
                 $lookup: {
@@ -70,8 +86,15 @@ class Posts {
                 }
             },
             { $sort: { created: -1 } }
-        ]).then((s) => res.send(s))
+        ]).then((allPost) => {
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', allPost);
+            return res.send(data);
+        }).catch((err) => {
+            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+            return res.send(data);
+        })
     });
+
 
     static getUserPosts = asyncWrapper(async (req, res) => {
         Post.aggregate(
@@ -92,13 +115,20 @@ class Posts {
                 },
                 { $sort: { created: -1 } }
             ]
-        ).then((s) => res.send(s))
+        ).then((userPost) => {
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', userPost);
+            return res.send(data);
+        }).catch((err) => {
+            let data = Response(Constants.RESULT_CODE.NOTFOUND, Constants.RESULT_FLAG.FAIL, err);
+            return res.send(data);
+        })
     });
 
     static updatePost = asyncWrapper(async (req, res) => {
         const count = await Report.countDocuments({ postId: req.params.postId });
         if (count > 3) {
-            res.send({ message: "Post has been removed due to multiple reports" });
+            let data = Response(Constants.RESULT_CODE.Forbidden, Constants.RESULT_FLAG.FAIL, 'Post has been removed due to multiple reports');
+            return res.send(data);
         } else {
             await Post.findByIdAndUpdate({ _id: req.params.postId }, {
                 title: req.body.title,
@@ -124,29 +154,33 @@ class Posts {
                             await Bookmark.findByIdAndUpdate(item._id, { status: req.body.status }, { new: true });
                         })
                     })
-
-                    res.send(newPost)
+                    let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', newPost);
+                    return res.send(data);
                 })
                 .catch((err) => {
-                    res.send(err)
+                    let data = Response(Constants.RESULT_CODE.NOTFOUND, Constants.RESULT_FLAG.FAIL, err);
+                    return res.send(data);
                 })
         }
     })
 
     static deletePost = asyncWrapper(async (req, res) => {
-        Post.findByIdAndDelete({ _id: req.params.postId }, { new: true }).then((dl) => res.send(dl))
+        Post.findByIdAndDelete({ _id: req.params.postId }, { new: true }).then((postDelete) => {
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your post is successfully delete', postDelete);
+            return res.send(data);
+        })
     })
 
     static likePost = asyncWrapper(async (req, res) => {
 
         Like.aggregate([
             { $match: { $and: [{ postId: req.body.postId }, { likedBy: req.body.likedBy }] } },
-        ]).then(async (s) => {
+        ]).then(async (likeData) => {
             let status = req.body.status;
-            if (s.length) {
-                let oldStatus = s[0].status;
+            if (likeData.length) {
+                let oldStatus = likeData[0].status;
                 if (-1 <= status && status <= 1) {
-                    if (s[0].status != status && (-1 <= status <= 1)) {
+                    if (likeData[0].status != status && (-1 <= status <= 1)) {
                         Like.findOneAndDelete({ likedBy: req.body.likedBy, postId: req.body.postId }).then(async (data) => {
                             const like = new Like({
                                 likedBy: req.body.likedBy,
@@ -171,17 +205,23 @@ class Posts {
                                         )
                                     }
                                 });
-                                res.send(like);
+                                let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your like is successfully updated', like);
+                                return res.send(data);
                             } catch (err) {
-                                return res.status(400).send({
-                                    message: err
-                                });
+                                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                                return res.send(data);
                             }
                         })
                     }
-                    else { res.send("You can not send same data") }
+                    else {
+                        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'You have already liked this post');
+                        return res.send(data);
+                    }
                 }
-                else { res.send("Not valid data") }
+                else {
+                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, 'Invalid data');
+                    return res.send(data);
+                }
             }
             else {
                 const like = new Like({
@@ -202,9 +242,11 @@ class Posts {
                             )
                         }
                     });
-                    res.send(like);
+                    let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', like);
+                    return res.send(data);
                 } catch (err) {
-                    console.log(err);
+                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                    return res.send(data);
                 }
             }
         })
@@ -215,12 +257,14 @@ class Posts {
         ]).then(async (data) => {
 
             if (data.length && req.body.isBookmark === false) {
-                Bookmark.findByIdAndDelete(data[0]._id).then(async (i) => {
-                    res.send("delete bookmark")
+                Bookmark.findByIdAndDelete(data[0]._id).then(async (delBookmark) => {
+                    let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your bookmark is successfully removed', delBookmark);
+                    return res.send(data);
                 })
             }
             else if (data.length && data[0].isBookmark === req.body.isBookmark) {
-                res.send("You can not pass same data")
+                let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'You can not pass same data');
+                return res.send(data);
             }
             else {
                 if (req.body.isBookmark === true) {
@@ -231,19 +275,19 @@ class Posts {
                     });
                     try {
                         await bookmark.save();
-                        res.send(bookmark);
+                        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your bookmark is successfully added', bookmark);
+                        return res.send(data);
                     } catch (err) {
-                        console.log(err);
+                        let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                        return res.send(data);
                     }
                 }
                 else {
-                    res.send("Wrong data")
+                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, 'Wrong data');
+                    return res.send(data);
                 }
-
             }
         })
-
-
     })
 
     // static userBookmark = asyncWrapper(async (req, res) => {
@@ -253,16 +297,19 @@ class Posts {
     // })
 
     static uploadImage = asyncWrapper(async (req, res) => {
-        res.send(req.file)
+        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your image is successfully uploaded', req.file);
+        return res.send(data);
     })
 
     static uploadMultipleImage = asyncWrapper(async (req, res) => {
-        res.send(req.files)
+        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your images is successfully uploaded', req.file);
+        return res.send(data);
     })
 
     static userBookmark = asyncWrapper(async (req, res) => {
-        Bookmark.find({ userId: req.params.userId, status: true }).populate('postId').then((data) => {
-            res.send(data)
+        Bookmark.find({ userId: req.params.userId, status: true }).populate('postId').then((userBM) => {
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', userBM);
+            return res.send(data);
         })
     })
 
@@ -274,9 +321,11 @@ class Posts {
         });
         try {
             await comment.save();
-            res.send(comment);
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your comment is successfully added', comment);
+            return res.send(data);
         } catch (err) {
-            console.log(err);
+            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+            return res.send(data);
         }
     })
 
@@ -302,19 +351,21 @@ class Posts {
                         ]).then(async (j) => {
                             await delay(500);
                             j.map(async (item) => {
-                                // Bookmark.findByIdAndUpdate({item._id }, { status: req.body.status }, { new: true })
                                 await Bookmark.findByIdAndUpdate(item._id, { status: false }, { new: true });
                             })
                         })
-                        res.send(reportPost)
+                        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your report is successfully added', reportPost);
+                        return res.send(data);
                     })
                     .catch((err) => {
-                        res.send(err)
+                        let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                        return res.send(data);
                     })
             }
             // res.send(report);
         } catch (err) {
-            console.log(err);
+            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+            return res.send(data);
         }
     })
 }
