@@ -1,11 +1,9 @@
 // import mongoose from 'mongoose ';
 import mongoose from 'mongoose';
+const Schema = mongoose.Schema
 
 const LikeSchema = new mongoose.Schema({
-    likedBy: {
-        type: String,
-        required: true
-    },
+    likedBy: Schema.Types.ObjectId,
     postId: {
         type: String,
         required: true

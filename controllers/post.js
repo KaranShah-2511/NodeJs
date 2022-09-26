@@ -30,15 +30,49 @@ class Posts {
     })
 
     static getSinglePost = asyncWrapper(async (req, res) => {
-        const post = await Post.findById(req.params.postId);
-        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
-        return res.send(data);
+        // const post = await Post.findById(req.params.postId);
+        // let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
+        // return res.send(data);
+        Post.aggregate([
+            {
+                $match: {
+                    _id: mongoose.Types.ObjectId(req.params.postId)
+                }
+            }, {
+                $lookup: {
+                    from: 'users',
+                    localField: 'createdBy',
+                    foreignField: '_id',
+                    as: 'user'
+                }
+            }, {
+                $unwind: {
+                    path: '$user',
+                    preserveNullAndEmptyArrays: true
+                }
+            }, {
+                $project: {
+                    _id: '$_id',
+                    title: '$title',
+                    description: '$description',
+                    tags: '$tags',
+                    likes: '$likes',
+                    dislikes: '$dislikes',
+                    created: '$created',
+                    name: '$user.fullName',
+                    email: '$user.email'
+                }
+            }]
+        ).then((post) => {
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
+            return res.send(data);
+        })
     })
 
     static getPosts = asyncWrapper(async (req, res) => {
         let filter = { "$match": { $and: [{ status: true }] } };
         const searchField = ["title", "description", "tags"];
-    
+
         if (req.body.Searchby != '' && req.body.Searchby != null) {
             // let regex = new RegExp(req.body.Searchby, 'i');
             // filter = { "$match": { $and: [{ $or: [{ "title": regex }, { "description": regex }, { "tags": regex }] }, { status: true }] } }
@@ -94,7 +128,6 @@ class Posts {
             return res.send(data);
         })
     });
-
 
     static getUserPosts = asyncWrapper(async (req, res) => {
         Post.aggregate(
@@ -174,14 +207,14 @@ class Posts {
     static likePost = asyncWrapper(async (req, res) => {
 
         Like.aggregate([
-            { $match: { $and: [{ postId: req.body.postId }, { likedBy: req.body.likedBy }] } },
+            { $match: { $and: [{ postId: req.body.postId }, { likedBy: mongoose.Types.ObjectId(req.body.likedBy) }] } },
         ]).then(async (likeData) => {
             let status = req.body.status;
             if (likeData.length) {
                 let oldStatus = likeData[0].status;
                 if (-1 <= status && status <= 1) {
                     if (likeData[0].status != status && (-1 <= status <= 1)) {
-                        Like.findOneAndDelete({ likedBy: req.body.likedBy, postId: req.body.postId }).then(async (data) => {
+                        Like.findOneAndDelete({ likedBy: mongoose.Types.ObjectId(req.body.likedBy), postId: req.body.postId }).then(async (data) => {
                             const like = new Like({
                                 likedBy: req.body.likedBy,
                                 postId: req.body.postId,
@@ -252,8 +285,35 @@ class Posts {
         })
     })
 
+    static likeUsers = asyncWrapper(async (req, res) => {
+        Like.aggregate([
+            { $match: { $and: [{ postId: req.params.postId }, { status: 1 }] } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'likedBy',
+                    foreignField: '_id',
+                    as: 'user'
+                }
+            }, {
+                $unwind: {
+                    path: '$user',
+                    preserveNullAndEmptyArrays: true
+                }
+            }, {
+                $project: {
+                    name: '$user.fullName',
+                    email: '$user.email'
+                }
+            }
+        ]).then((userlist) => {
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', userlist);
+            return res.send(data);
+        })
+    })
+
     static bookmark = asyncWrapper(async (req, res) => {
-        Bookmark.aggregate([{ $match: { userId: req.body.userId, postId: req.body.postId } }
+        Bookmark.aggregate([{ $match: { userId:  mongoose.Types.ObjectId(req.body.userId), postId:  mongoose.Types.ObjectId(req.body.postId) } }
         ]).then(async (data) => {
 
             if (data.length && req.body.isBookmark === false) {
@@ -307,8 +367,53 @@ class Posts {
     })
 
     static userBookmark = asyncWrapper(async (req, res) => {
-        Bookmark.find({ userId: req.params.userId, status: true }).populate('postId').then((userBM) => {
-            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', userBM);
+        // Bookmark.find({ userId: req.params.userId, status: true }).populate('postId').then((userBM) => {
+        //     let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', userBM);
+        //     return res.send(data);
+        // })
+
+        Bookmark.aggregate([{
+            $match: {
+                userId: mongoose.Types.ObjectId(req.params.userId)
+            }
+        }, {
+            $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                as: 'user'
+            }
+        }, {
+            $lookup: {
+                from: 'posts',
+                localField: 'postId',
+                foreignField: '_id',
+                as: 'post'
+            }
+        }, {
+            $unwind: {
+                path: '$post',
+                preserveNullAndEmptyArrays: true
+            }
+        }, {
+            $unwind: {
+                path: '$user',
+                preserveNullAndEmptyArrays: true
+            }
+        }, {
+            $project: {
+                _id: '$_id',
+                title: '$post.title',
+                description: '$post.description',
+                tags: '$post.tags',
+                likes: '$post.likes',
+                dislikes: '$post.dislikes',
+                created: '$post.created',
+                name: '$user.fullName',
+                email: '$user.email'
+            }
+        }]).then((userBook) => {
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', userBook);
             return res.send(data);
         })
     })

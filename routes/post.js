@@ -20,6 +20,8 @@ router.delete('/deletepost/:postId', Auth, Posts.deletePost);
 
 router.post('/likepost/:postId', Auth, Posts.likePost);
 
+router.get('/likepost/:postId', Auth, Posts.likeUsers);
+
 router.post('/bookmark', Auth, Posts.bookmark);
 
 router.get('/bookmark/:userId', Auth, Posts.userBookmark);

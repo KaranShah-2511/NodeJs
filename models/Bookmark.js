@@ -4,14 +4,9 @@ const { Schema } = mongoose;
 
 
 const BookmarkSchema = new mongoose.Schema({
-    userId: {
-        type: String,
-        required: true
-    },
-    postId: {
-        type: String,
-        ref: 'Post'
-    },
+    userId: Schema.Types.ObjectId,
+    postId: Schema.Types.ObjectId,
+    
     isBookmark: {
         type: Boolean,
         default: false
