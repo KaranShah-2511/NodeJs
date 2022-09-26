@@ -177,7 +177,7 @@ class Posts {
                     Bookmark.aggregate([
                         {
                             $match: {
-                                postId: req.params.postId
+                                postId: mongoose.Types.ObjectId(req.params.postId)
                             }
                         }
                     ]).then(async (j) => {
@@ -313,7 +313,7 @@ class Posts {
     })
 
     static bookmark = asyncWrapper(async (req, res) => {
-        Bookmark.aggregate([{ $match: { userId:  mongoose.Types.ObjectId(req.body.userId), postId:  mongoose.Types.ObjectId(req.body.postId) } }
+        Bookmark.aggregate([{ $match: { userId: mongoose.Types.ObjectId(req.body.userId), postId: mongoose.Types.ObjectId(req.body.postId) } }
         ]).then(async (data) => {
 
             if (data.length && req.body.isBookmark === false) {
@@ -442,15 +442,15 @@ class Posts {
         });
         try {
             await report.save();
-            const count = await Report.countDocuments({ postId: req.body.postId })
+            const count = await Report.countDocuments({ postId: mongoose.Types.ObjectId(req.body.postId) })
             if (count > 3) {
-                await Post.findByIdAndUpdate(req.body.postId, { status: false })
+                await Post.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.postId), { status: false })
                     .then(async (reportPost) => {
                         await delay(500);
                         Bookmark.aggregate([
                             {
                                 $match: {
-                                    postId: req.body.postId
+                                    postId: mongoose.Types.ObjectId(req.body.postId)
                                 }
                             }
                         ]).then(async (j) => {
