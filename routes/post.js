@@ -9,6 +9,8 @@ router.post('/', Auth, Posts.create);
 
 router.get('/', Auth, Posts.getPosts);
 
+router.get('/singlepost/:postId', Auth, Posts.getSinglePost);
+
 router.get('/getallposts/:userId', Auth, Posts.getUserPosts);
 
 router.post('/updatepost/:postId', Posts.updatePost);
@@ -23,6 +25,8 @@ router.post('/bookmark', Auth, Posts.bookmark);
 router.get('/bookmark/:userId', Auth, Posts.userBookmark);
 
 router.post('/comment', Auth, Posts.comment);
+
+router.post('/report', Auth, Posts.report);
 
 router.post('/singleimage', Auth, upload.single('image'), Posts.uploadImage);
 

@@ -5,6 +5,7 @@ import asyncWrapper from "../middleware/async.js"
 import delay from "../middleware/delay.js"
 import mongoose from 'mongoose';
 import Comment from "../models/Comment.js"
+import Report from "../models/Report.js"
 
 
 class Posts {
@@ -23,6 +24,11 @@ class Posts {
         } catch (err) {
             res.send(err);
         }
+    })
+
+    static getSinglePost = asyncWrapper(async (req, res) => {
+        const post = await Post.findById(req.params.postId);
+        res.send(post);
     })
 
     static getPosts = asyncWrapper(async (req, res) => {
@@ -90,36 +96,41 @@ class Posts {
     });
 
     static updatePost = asyncWrapper(async (req, res) => {
-        await Post.findByIdAndUpdate({ _id: req.params.postId }, {
-            title: req.body.title,
-            description: req.body.description,
-            tags: req.body.tags || [],
-            createdBy: req.body.createdBy,
-            UpdatedDate: new Date(),
-            status: req.body.status,
-            // imagePath: req.file.filename
-        }, { new: true })
-            .then(async (newPost) => {
-                await delay(500);
-                Bookmark.aggregate([
-                    {
-                        $match: {
-                            postId: req.params.postId
-                        }
-                    }
-                ]).then(async (j) => {
+        const count = await Report.countDocuments({ postId: req.params.postId });
+        if (count > 3) {
+            res.send({ message: "Post has been removed due to multiple reports" });
+        } else {
+            await Post.findByIdAndUpdate({ _id: req.params.postId }, {
+                title: req.body.title,
+                description: req.body.description,
+                tags: req.body.tags || [],
+                createdBy: req.body.createdBy,
+                UpdatedDate: new Date(),
+                status: req.body.status,
+                // imagePath: req.file.filename
+            }, { new: true })
+                .then(async (newPost) => {
                     await delay(500);
-                    j.map(async (item) => {
-                        // Bookmark.findByIdAndUpdate({item._id }, { status: req.body.status }, { new: true })
-                        await Bookmark.findByIdAndUpdate(item._id, { status: req.body.status }, { new: true });
+                    Bookmark.aggregate([
+                        {
+                            $match: {
+                                postId: req.params.postId
+                            }
+                        }
+                    ]).then(async (j) => {
+                        await delay(500);
+                        j.map(async (item) => {
+                            // Bookmark.findByIdAndUpdate({item._id }, { status: req.body.status }, { new: true })
+                            await Bookmark.findByIdAndUpdate(item._id, { status: req.body.status }, { new: true });
+                        })
                     })
-                })
 
-                res.send(newPost)
-            })
-            .catch((err) => {
-                res.send(err)
-            })
+                    res.send(newPost)
+                })
+                .catch((err) => {
+                    res.send(err)
+                })
+        }
     })
 
     static deletePost = asyncWrapper(async (req, res) => {
@@ -264,6 +275,44 @@ class Posts {
         try {
             await comment.save();
             res.send(comment);
+        } catch (err) {
+            console.log(err);
+        }
+    })
+
+    static report = asyncWrapper(async (req, res) => {
+        const report = new Report({
+            userId: req.body.userId,
+            postId: req.body.postId,
+            reason: req.body.reason,
+        });
+        try {
+            await report.save();
+            const count = await Report.countDocuments({ postId: req.body.postId })
+            if (count > 3) {
+                await Post.findByIdAndUpdate(req.body.postId, { status: false })
+                    .then(async (reportPost) => {
+                        await delay(500);
+                        Bookmark.aggregate([
+                            {
+                                $match: {
+                                    postId: req.body.postId
+                                }
+                            }
+                        ]).then(async (j) => {
+                            await delay(500);
+                            j.map(async (item) => {
+                                // Bookmark.findByIdAndUpdate({item._id }, { status: req.body.status }, { new: true })
+                                await Bookmark.findByIdAndUpdate(item._id, { status: false }, { new: true });
+                            })
+                        })
+                        res.send(reportPost)
+                    })
+                    .catch((err) => {
+                        res.send(err)
+                    })
+            }
+            // res.send(report);
         } catch (err) {
             console.log(err);
         }
