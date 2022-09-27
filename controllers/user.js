@@ -44,7 +44,8 @@ class Users {
                         $project: {
                             Email: '$email',
                             FullName: '$fullName',
-                            Token: '$Token'
+                            Token: '$Token',
+                            UserType: '$userType'
                         }
                     }], (err, data) => {
                         res.status(200).json(data)

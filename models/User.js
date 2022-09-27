@@ -19,6 +19,11 @@ const UserSchema = new mongoose.Schema({
     hash_password: {
         type: String,
     },
+    userType: {
+        type: String,
+        default:"User",
+        enum: ["User", "Admin"]
+    },
     created: {
         type: Date,
         default: Date.now

@@ -4,6 +4,7 @@ import express from 'express'
 import cors from 'cors'
 import connectDB from './config/connectdb.js'
 import tasks from './routes/tasks.js'
+import admin from './routes/admin.js'
 import notFound from './middleware/notFound.js'
 import errorHandler from './middleware/error.js'
 import users from './routes/user.js'
@@ -22,6 +23,7 @@ connectDB(DATABASE_URL)
 //     res.send('Hello World')
 // })
 
+app.use('/admin', admin)
 app.use('/tasks', tasks)
 app.use('/auth',users)
 app.use('/post',posts)

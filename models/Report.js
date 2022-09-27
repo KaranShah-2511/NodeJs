@@ -4,14 +4,8 @@ const { Schema } = mongoose;
 
 
 const ReportSchema = new mongoose.Schema({
-    userId: {
-        type: String,
-        required: true
-    },
-    postId: {
-        type: String,
-        required: true
-    },
+    userId: Schema.Types.ObjectId,
+    postId: Schema.Types.ObjectId,
     reason: {
         type: String,
         required: true

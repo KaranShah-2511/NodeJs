@@ -158,7 +158,8 @@ class Posts {
     });
 
     static updatePost = asyncWrapper(async (req, res) => {
-        const count = await Report.countDocuments({ postId: req.params.postId });
+        const count = await Report.countDocuments({ postId: mongoose.Types.ObjectId(req.body.postId) })
+
         if (count > 3) {
             let data = Response(Constants.RESULT_CODE.Forbidden, Constants.RESULT_FLAG.FAIL, 'Post has been removed due to multiple reports');
             return res.send(data);
@@ -435,43 +436,60 @@ class Posts {
     })
 
     static report = asyncWrapper(async (req, res) => {
-        const report = new Report({
-            userId: req.body.userId,
-            postId: req.body.postId,
-            reason: req.body.reason,
-        });
-        try {
-            await report.save();
-            const count = await Report.countDocuments({ postId: mongoose.Types.ObjectId(req.body.postId) })
-            if (count > 3) {
-                await Post.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.postId), { status: false })
-                    .then(async (reportPost) => {
-                        await delay(500);
-                        Bookmark.aggregate([
-                            {
-                                $match: {
-                                    postId: mongoose.Types.ObjectId(req.body.postId)
-                                }
-                            }
-                        ]).then(async (j) => {
-                            await delay(500);
-                            j.map(async (item) => {
-                                await Bookmark.findByIdAndUpdate(item._id, { status: false }, { new: true });
-                            })
-                        })
-                        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your report is successfully added', reportPost);
-                        return res.send(data);
-                    })
-                    .catch((err) => {
-                        let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
-                        return res.send(data);
-                    })
+
+        Report.findOne({
+            userId: mongoose.Types.ObjectId(req.body.userId),
+            postId: mongoose.Types.ObjectId(req.body.postId)
+        }).then(async (reportData) => {
+            if (reportData) {
+                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, "You already reported this post");
+                return res.send(data);
             }
-            // res.send(report);
-        } catch (err) {
-            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
-            return res.send(data);
-        }
+            else {
+                const report = new Report({
+                    userId: req.body.userId,
+                    postId: req.body.postId,
+                    reason: req.body.reason,
+                });
+                try {
+                    await report.save().then(async (da) => {
+                        const count = await Report.countDocuments({ postId: mongoose.Types.ObjectId(req.body.postId) })
+                        if (count > 3) {
+                            await Post.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.postId), { status: false })
+                                .then(async (reportPost) => {
+                                    await delay(500);
+                                    Bookmark.aggregate([
+                                        {
+                                            $match: {
+                                                postId: mongoose.Types.ObjectId(req.body.postId)
+                                            }
+                                        }
+                                    ]).then(async (j) => {
+                                        await delay(500);
+                                        j.map(async (item) => {
+                                            await Bookmark.findByIdAndUpdate(item._id, { status: false }, { new: true });
+                                        })
+                                    })
+                                    let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your report is successfully added', reportPost);
+                                    return res.send(data);
+                                })
+                                .catch((err) => {
+                                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                                    return res.send(data);
+                                })
+                        }
+                        else {
+                            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your report is successfully added', da);
+                            return res.send(data);
+                        }
+                    })
+                    // res.send(report);
+                } catch (err) {
+                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                    return res.send(data);
+                }
+            }
+        })
     })
 }
 
