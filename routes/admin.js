@@ -11,6 +11,8 @@ router.post('/repotedpost/:postId', Auth, Admin.reviewPost);
 
 router.get('/post/block/req', Auth , Admin.getAllReq)
 
+// router.get('/post/block/req', Auth , Admin.getAllReq)
+
 
 
 

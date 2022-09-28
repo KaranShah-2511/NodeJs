@@ -9,6 +9,7 @@ import Report from "../models/Report.js"
 import Response from "../common/Response.js"
 import Constants from "../common/Constants.js"
 import UnblockReq from "../models/UnblockReq.js"
+import Notification from "../models/Notification.js"
 
 class Posts {
     static create = asyncWrapper(async (req, res) => {
@@ -470,6 +471,18 @@ class Posts {
                                         j.map(async (item) => {
                                             await Bookmark.findByIdAndUpdate(item._id, { status: false }, { new: true });
                                         })
+                                    }).then(async (nofion) => {
+                                        const notification = new Notification({
+                                            owner: reportPost.createdBy,
+                                            postId: req.body.postId,
+                                            description: `Your post ${reportPost.title} has been blocked due to multiple reports`
+                                        })
+                                        try {
+                                            await notification.save();
+                                        } catch (err) {
+                                            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                                            return res.send(data);
+                                        }
                                     })
                                     let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your report is successfully added', reportPost);
                                     return res.send(data);
@@ -508,6 +521,23 @@ class Posts {
             let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, "Complain registered");
             return res.send(data);
         }
+    })
+
+    static getNotification = asyncWrapper(async (req, res) => {
+        Notification.find({ owner: mongoose.Types.ObjectId(req.params.userId) }).then((notification) => {
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', notification);
+            return res.send(data);
+        })
+    })
+
+    static deleteNotification = asyncWrapper(async (req, res) => {
+        Notification.findByIdAndDelete(req.params.notificationId).then((del) => {
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Notification deleted', del);
+            return res.send(data);
+        }).catch((err) => {
+            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+            return res.send(data);
+        })
     })
 }
 
