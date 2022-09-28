@@ -8,7 +8,8 @@ import Post from "../models/Post.js"
 import Bookmark from "../models/Bookmark.js"
 import mongoose from "mongoose"
 import delay from "../common/Delay.js"
-
+import UnblockReq from "../models/UnblockReq.js"
+import lookup from "../common/LookUp.js"
 class Admin {
 
   static allUser = asyncWrapper(async (req, res) => {
@@ -42,31 +43,9 @@ class Admin {
           _id: { postId: '$postId' },
           count: { $sum: 1 }
         }
-      }, {
-        $lookup: {
-          from: 'posts',
-          localField: '_id.postId',
-          foreignField: '_id',
-          as: 'post'
-        }
-      }, {
-        $unwind: {
-          path: '$post',
-          preserveNullAndEmptyArrays: true
-        }
-      }, {
-        $lookup: {
-          from: 'users',
-          localField: 'post.createdBy',
-          foreignField: '_id',
-          as: 'user'
-        }
-      }, {
-        $unwind: {
-          path: '$user',
-          preserveNullAndEmptyArrays: true
-        }
       },
+      ...lookup("posts", "_id.postId", "_id", "post"),
+      ...lookup("users", "post.createdBy", "_id", "user"),
       {
         $project: {
           _id: '$_id.postId',
@@ -85,8 +64,8 @@ class Admin {
       },
       { $sort: { TotalReport: -1 } }]
 
-    ).then((repotData) => {
-      let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', repotData);
+    ).then((reportData) => {
+      let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', reportData);
       return res.send(data);
     })
   })
@@ -116,7 +95,31 @@ class Admin {
       })
   })
 
-  
+  static getAllReq = asyncWrapper(async (req, res) => {
+    UnblockReq.aggregate([
+      ...lookup("posts", "postId", "_id", "post"),
+      ...lookup("users", "userId", "_id", "user"),
+      {
+        $project: {
+          _id: '$_id',
+          title: '$post.title',
+          description: '$post.description',
+          tags: '$post.tags',
+          createdBy: '$post.createdBy',
+          created: '$post.created',
+          status: '$post.status',
+          likes: '$post.likes',
+          dislikes: '$post.dislikes',
+          TotalReport: '$count',
+          name: '$user.fullName',
+          email: '$user.email',
+          ReqDescription:"$description"
+        }
+      }]).then((allreq) => {
+        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', allreq);
+      return res.send(data);
+      })
+  })
 
 }
 

@@ -8,6 +8,7 @@ import Comment from "../models/Comment.js"
 import Report from "../models/Report.js"
 import Response from "../common/Response.js"
 import Constants from "../common/Constants.js"
+import UnblockReq from "../models/UnblockReq.js"
 
 class Posts {
     static create = asyncWrapper(async (req, res) => {
@@ -490,6 +491,23 @@ class Posts {
                 }
             }
         })
+    })
+
+    static unblockReq = asyncWrapper(async (req, res) => {
+        const unblockReq = new UnblockReq({
+            postId: req.body.postId,
+            userId: req.body.userId,
+            description: req.body.description,
+            // imagePath: req.file.filename
+        });
+        try {
+            await unblockReq.save();
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', unblockReq);
+            return res.send(data);
+        } catch (err) {
+            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, "Complain registered");
+            return res.send(data);
+        }
     })
 }
 

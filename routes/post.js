@@ -30,8 +30,12 @@ router.post('/comment', Auth, Posts.comment);
 
 router.post('/report', Auth, Posts.report);
 
+router.post('/unblockreq', Auth, Posts.unblockReq);
+
 router.post('/singleimage', Auth, upload.single('image'), Posts.uploadImage);
 
 router.post('/multipleimage', Auth, upload.array('image', 4), Posts.uploadMultipleImage);
+
+
 
 export default router;
