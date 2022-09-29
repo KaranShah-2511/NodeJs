@@ -9,6 +9,10 @@ const ReportSchema = new mongoose.Schema({
     reason: {
         type: String,
         required: true
+    },
+    status: {
+        type: Boolean,
+        default: true
     }
 }, {
     versionKey: false

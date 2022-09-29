@@ -10,6 +10,8 @@ import mongoose from "mongoose"
 import delay from "../common/Delay.js"
 import UnblockReq from "../models/UnblockReq.js"
 import lookup from "../common/LookUp.js"
+import Notification from "../models/Notification.js"
+
 class Admin {
 
   static allUser = asyncWrapper(async (req, res) => {
@@ -38,7 +40,8 @@ class Admin {
 
   static reportedPost = asyncWrapper(async (req, res) => {
     Report.aggregate(
-      [{
+      [{ $match: { status: true } },
+      {
         $group: {
           _id: { postId: '$postId' },
           count: { $sum: 1 }
@@ -86,7 +89,32 @@ class Admin {
             await Bookmark.findByIdAndUpdate(item._id, { status: req.body.status }, { new: true });
           })
         })
-        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your report is successfully added');
+
+        Report.aggregate([
+          {
+            $match: {
+              postId: mongoose.Types.ObjectId(req.params.postId)
+            }
+          }
+        ]).then(async (reports) => {
+          await delay(500);
+          reports.map(async (item) => {
+            await Report.findByIdAndUpdate(item._id, { status: false }, { new: true });
+          })
+        }).then(async (nofion) => {
+          const notification = new Notification({
+            owner: reportPost.createdBy,
+            postId: req.params.postId,
+            description: (req.body.status === true) ? `Your post ${reportPost.title} is enable` : `Your post ${reportPost.title} violate policy`
+          })
+          try {
+            await notification.save();
+          } catch (err) {
+            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+            return res.send(data);
+          }
+        })
+        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your updated status', reportPost);
         return res.send(data);
       })
       .catch((err) => {
@@ -113,11 +141,11 @@ class Admin {
           TotalReport: '$count',
           name: '$user.fullName',
           email: '$user.email',
-          ReqDescription:"$description"
+          ReqDescription: "$description"
         }
       }]).then((allreq) => {
         let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', allreq);
-      return res.send(data);
+        return res.send(data);
       })
   })
 

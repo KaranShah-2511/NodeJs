@@ -518,13 +518,19 @@ class Posts {
             let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', unblockReq);
             return res.send(data);
         } catch (err) {
-            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, "Complain registered");
+            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
             return res.send(data);
         }
     })
 
     static getNotification = asyncWrapper(async (req, res) => {
-        Notification.find({ owner: mongoose.Types.ObjectId(req.params.userId) }).then((notification) => {
+        Notification.aggregate([{
+            $match: {
+                owner: mongoose.Types.ObjectId(req.params.userId)
+            }
+        },
+        { $sort: { created: -1 } }
+        ]).then((notification) => {
             let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', notification);
             return res.send(data);
         })
