@@ -5,11 +5,11 @@ const { Schema } = mongoose;
 
 const CommentSchema = new mongoose.Schema({
     userId: {
-        type: String,
+        type: Schema.Types.ObjectId,
         required: true
     },
     postId: {
-        type: String,
+        type: Schema.Types.ObjectId,
         required: true
     },
     comment: {

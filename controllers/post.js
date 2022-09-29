@@ -437,6 +437,35 @@ class Posts {
         }
     })
 
+    static getComment = asyncWrapper(async (req, res) => {
+        Comment.aggregate([{
+            $match: {
+                postId: mongoose.Types.ObjectId(req.params.postId)
+            }
+        }, {
+            $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                as: 'user'
+            }
+        }, {
+            $unwind: {
+                path: '$user',
+                preserveNullAndEmptyArrays: true
+            }
+        }, {
+            $project: {
+                name: '$user.fullName',
+                email: '$user.email',
+                comment: '$comment'
+            }
+        }]).then((post) => {
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
+            return res.send(data);
+        })
+    })
+
     static report = asyncWrapper(async (req, res) => {
 
         Report.findOne({

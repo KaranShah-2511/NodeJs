@@ -30,6 +30,8 @@ router.get('/bookmark/:userId', Auth, Posts.userBookmark);
 
 router.post('/comment', Auth, Posts.comment);
 
+router.get('/comment/:postId', Auth, Posts.getComment);
+
 router.post('/report', Auth, Posts.report);
 
 router.post('/unblockreq', Auth, Posts.unblockReq);
