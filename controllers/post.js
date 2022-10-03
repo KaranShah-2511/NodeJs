@@ -2,6 +2,7 @@ import Post from "../models/Post.js"
 import Like from "../models/Like.js"
 import Bookmark from "../models/Bookmark.js"
 import asyncWrapper from "../middleware/async.js"
+import User from "../models/User.js"
 import delay from "../common/Delay.js"
 import mongoose from 'mongoose';
 import Comment from "../models/Comment.js"
@@ -177,19 +178,20 @@ class Posts {
             }, { new: true })
                 .then(async (newPost) => {
                     await delay(500);
-                    Bookmark.aggregate([
-                        {
-                            $match: {
-                                postId: mongoose.Types.ObjectId(req.params.postId)
-                            }
-                        }
-                    ]).then(async (j) => {
-                        await delay(500);
-                        j.map(async (item) => {
-                            // Bookmark.findByIdAndUpdate({item._id }, { status: req.body.status }, { new: true })
-                            await Bookmark.findByIdAndUpdate(item._id, { status: req.body.status }, { new: true });
-                        })
-                    })
+                    await Bookmark.updateMany({postId: mongoose.Types.ObjectId(req.params.postId) }, { status: req.body.status }, { new: true })
+                    // Bookmark.aggregate([
+                    //     {
+                    //         $match: {
+                    //             postId: mongoose.Types.ObjectId(req.params.postId)
+                    //         }
+                    //     }
+                    // ]).then(async (j) => {
+                    //     await delay(500);
+                    //     j.map(async (item) => {
+                    //         // Bookmark.findByIdAndUpdate({item._id }, { status: req.body.status }, { new: true })
+                    //         await Bookmark.findByIdAndUpdate(item._id, { status: req.body.status }, { new: true });
+                    //     })
+                    // })
                     let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', newPost);
                     return res.send(data);
                 })
@@ -466,7 +468,7 @@ class Posts {
         })
     })
 
-    static report = asyncWrapper(async (req, res) => {
+    static postReport = asyncWrapper(async (req, res) => {
 
         Report.findOne({
             userId: mongoose.Types.ObjectId(req.body.userId),
@@ -489,18 +491,20 @@ class Posts {
                             await Post.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.postId), { status: false })
                                 .then(async (reportPost) => {
                                     await delay(500);
-                                    Bookmark.aggregate([
-                                        {
-                                            $match: {
-                                                postId: mongoose.Types.ObjectId(req.body.postId)
-                                            }
-                                        }
-                                    ]).then(async (j) => {
-                                        await delay(500);
-                                        j.map(async (item) => {
-                                            await Bookmark.findByIdAndUpdate(item._id, { status: false }, { new: true });
-                                        })
-                                    }).then(async (nofion) => {
+                                    await Bookmark.updateMany({postId: mongoose.Types.ObjectId(req.params.postId) }, { status: false }, { new: true })
+                                    // Bookmark.aggregate([
+                                    //     {
+                                    //         $match: {
+                                    //             postId: mongoose.Types.ObjectId(req.body.postId)
+                                    //         }
+                                    //     }
+                                    // ]).then(async (j) => {
+                                    //     await delay(500);
+                                    //     j.map(async (item) => {
+                                    //         await Bookmark.findByIdAndUpdate(item._id, { status: false }, { new: true });
+                                    //     })
+                                    // })
+                                    .then(async (nofion) => {
                                         const notification = new Notification({
                                             owner: reportPost.createdBy,
                                             postId: req.body.postId,
@@ -535,9 +539,62 @@ class Posts {
         })
     })
 
+    static accReport = asyncWrapper(async (req, res) => {
+        Report.findOne({
+            $and: [{ userId: mongoose.Types.ObjectId(req.body.userId), }, { accountId: mongoose.Types.ObjectId(req.body.accountId) }]
+        }).then(async (reportData) => {
+            if (reportData) {
+                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, "You already reported this Account");
+                return res.send(data);
+            }
+            else {
+                const report = new Report({
+                    userId: req.body.userId,
+                    accountId: req.body.accountId,
+                    reason: req.body.reason,
+                });
+                try {
+                    await report.save().then(async (da) => {
+                        const count = await Report.countDocuments({ accountId: mongoose.Types.ObjectId(req.body.accountId) })
+                        if (count > 3) {
+                            await Post.updateMany({ createdBy: mongoose.Types.ObjectId(req.body.accountId) }, { status: false })
+                            await User.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.accountId), { status: false })
+                                .then(async (reportAccount) => {
+                                    await delay(500);
+                                    const notification = new Notification({
+                                        owner: reportAccount._id,
+                                        accountId: req.body.accountId,
+                                        description: `Your account has been blocked due to multiple reports`
+                                    })
+                                    try {
+                                        await notification.save();
+                                    } catch (err) {
+                                        let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                                        return res.send(data);
+                                    }
+
+                                })
+                                .catch((err) => {
+                                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                                    return res.send(data);
+                                })
+                        }
+                        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your report is successfully added', da);
+                        return res.send(data);
+                    })
+
+                } catch (err) {
+                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                    return res.send(data);
+                }
+            }
+        })
+    })
+
     static unblockReq = asyncWrapper(async (req, res) => {
         const unblockReq = new UnblockReq({
             postId: req.body.postId,
+            accountId: req.body.accountId,
             userId: req.body.userId,
             description: req.body.description,
             // imagePath: req.file.filename

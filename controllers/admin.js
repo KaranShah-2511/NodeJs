@@ -77,43 +77,46 @@ class Admin {
     await Post.findByIdAndUpdate(req.params.postId, { status: req.body.status })
       .then(async (reportPost) => {
         await delay(500);
-        Bookmark.aggregate([
-          {
-            $match: {
-              postId: mongoose.Types.ObjectId(req.params.postId)
-            }
-          }
-        ]).then(async (j) => {
-          await delay(500);
-          j.map(async (item) => {
-            await Bookmark.findByIdAndUpdate(item._id, { status: req.body.status }, { new: true });
-          })
-        })
+        await Bookmark.updateMany({ postId: mongoose.Types.ObjectId(req.params.postId) }, { status: req.body.status }, { new: true })
+        // Bookmark.aggregate([
+        //   {
+        //     $match: {
+        //       postId: mongoose.Types.ObjectId(req.params.postId)
+        //     }
+        //   }
+        // ]).then(async (j) => {
+        //   await delay(500);
+        //   j.map(async (item) => {
+        //     await Bookmark.findByIdAndUpdate(item._id, { status: req.body.status }, { new: true });
+        //   })
+        // })
 
-        Report.aggregate([
-          {
-            $match: {
-              postId: mongoose.Types.ObjectId(req.params.postId)
+        // Report.aggregate([
+        //   {
+        //     $match: {
+        //       postId: mongoose.Types.ObjectId(req.params.postId)
+        //     }
+        //   }
+        // ]).then(async (reports) => {
+        //   await delay(500);
+        //   reports.map(async (item) => {
+        //     await Report.findByIdAndUpdate(item._id, { status: false }, { new: true });
+        //   })
+        // })
+        await Report.updateMany({ postId: mongoose.Types.ObjectId(req.params.postId) }, { status: false }, { new: true })
+          .then(async (nofion) => {
+            const notification = new Notification({
+              owner: reportPost.createdBy,
+              postId: req.params.postId,
+              description: (req.body.status === true) ? `Your post ${reportPost.title} is enable` : `Your post ${reportPost.title} violate policy`
+            })
+            try {
+              await notification.save();
+            } catch (err) {
+              let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+              return res.send(data);
             }
-          }
-        ]).then(async (reports) => {
-          await delay(500);
-          reports.map(async (item) => {
-            await Report.findByIdAndUpdate(item._id, { status: false }, { new: true });
           })
-        }).then(async (nofion) => {
-          const notification = new Notification({
-            owner: reportPost.createdBy,
-            postId: req.params.postId,
-            description: (req.body.status === true) ? `Your post ${reportPost.title} is enable` : `Your post ${reportPost.title} violate policy`
-          })
-          try {
-            await notification.save();
-          } catch (err) {
-            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
-            return res.send(data);
-          }
-        })
         let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your updated status', reportPost);
         return res.send(data);
       })
@@ -125,6 +128,11 @@ class Admin {
 
   static getAllReq = asyncWrapper(async (req, res) => {
     UnblockReq.aggregate([
+      {
+        $match: {
+          type: 'Post'
+        }
+      },
       ...lookup("posts", "postId", "_id", "post"),
       ...lookup("users", "userId", "_id", "user"),
       {
@@ -141,6 +149,7 @@ class Admin {
           TotalReport: '$count',
           name: '$user.fullName',
           email: '$user.email',
+          type: "$type",
           ReqDescription: "$description"
         }
       }]).then((allreq) => {

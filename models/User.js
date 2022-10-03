@@ -30,6 +30,11 @@ const UserSchema = new mongoose.Schema({
     },
     UpdatedDate: Date,
     Token: String,
+    status: {
+        type: Boolean,
+        default: true
+    }
+
 }, {
     versionKey: false   // __v: 0 hide 
 })

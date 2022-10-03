@@ -32,7 +32,9 @@ router.post('/comment', Auth, Posts.comment);
 
 router.get('/comment/:postId', Auth, Posts.getComment);
 
-router.post('/report', Auth, Posts.report);
+router.post('/postreport', Auth, Posts.postReport);
+
+router.post('/accountreport', Auth, Posts.accReport);
 
 router.post('/unblockreq', Auth, Posts.unblockReq);
 

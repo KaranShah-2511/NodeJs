@@ -7,12 +7,20 @@ const UnblockReqSchema = new mongoose.Schema({
         type:Schema.Types.ObjectId,
         unique: true,
     },
+    accountId:{
+        type:Schema.Types.ObjectId,
+        unique: true,
+    },
     status: {
         type: Boolean,
         default: true
     },
     description: {
         type: String,
+    },
+    type:{
+        type:String,
+        enum:["Post","Account"]
     },
     created: {
         type: Date,

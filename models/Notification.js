@@ -5,8 +5,7 @@ const Schema = mongoose.Schema
 const NotificationSchema = new mongoose.Schema({
     owner: Schema.Types.ObjectId,
     postId: {
-        type: String,
-        required: true
+        type: String
     },
     created: {
         type: Date,
@@ -15,6 +14,7 @@ const NotificationSchema = new mongoose.Schema({
     description: {
         type: String,
     },
+    
 }, {
     versionKey: false
 })

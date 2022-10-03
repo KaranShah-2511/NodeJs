@@ -6,6 +6,7 @@ const { Schema } = mongoose;
 const ReportSchema = new mongoose.Schema({
     userId: Schema.Types.ObjectId,
     postId: Schema.Types.ObjectId,
+    accountId:Schema.Types.ObjectId,
     reason: {
         type: String,
         required: true
