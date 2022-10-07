@@ -15,9 +15,34 @@ import Notification from "../models/Notification.js"
 class Admin {
 
   static allUser = asyncWrapper(async (req, res) => {
-    let filter = { "$match": { $and: [{ userType: "User" }] } };
+    let filter = { "$match": { $and: [{ userType: "User", status: true }] } };
     const searchField = ["fullName", "email"];
 
+    if (req.body.Searchby != '' && req.body.Searchby != null) {
+
+      const Searchbys = (typeof req.body.Searchby === 'object') ? req.body.Searchby : [req.body.Searchby];
+      const matchField = searchField.map((field) => {
+        return { [field]: { "$regex": Searchbys.join('|'), "$options": 'i' } };
+      });
+      if (filter['$match']['$and'] !== undefined) {
+        filter['$match']['$and'].push({ $or: matchField });
+      } else {
+        filter = { "$match": { $and: [{ $or: matchField }] } }
+      }
+    }
+
+    User.aggregate([filter])
+      .then((users) => {
+        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', users);
+        return res.send(data);
+      })
+  })
+
+  static blockUser = asyncWrapper(async (req, res) => {
+    let filter = { "$match": { $and: [{ userType: "User", status: false }] } };
+    const searchField = ["fullName", "email"];
+
+ 
     if (req.body.Searchby != '' && req.body.Searchby != null) {
 
       const Searchbys = (typeof req.body.Searchby === 'object') ? req.body.Searchby : [req.body.Searchby];
@@ -156,6 +181,23 @@ class Admin {
         let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', allreq);
         return res.send(data);
       })
+  })
+
+  static getAllAccReq = asyncWrapper(async (req, res) => {
+    UnblockReq.aggregate([{ $match: { type: 'Account' } },
+    ...lookup("users", "userId", "_id", "user"),
+    {
+      $project: {
+        _id: '$_id',
+        name: '$user.fullName',
+        email: '$user.email',
+        type: "$type",
+        ReqDescription: "$description"
+      }
+    }]).then((allreq) => {
+      let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', allreq);
+      return res.send(data);
+    })
   })
 
 }

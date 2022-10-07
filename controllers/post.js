@@ -11,6 +11,9 @@ import Response from "../common/Response.js"
 import Constants from "../common/Constants.js"
 import UnblockReq from "../models/UnblockReq.js"
 import Notification from "../models/Notification.js"
+import tokenDecode from "../common/TokenDecode.js"
+import PostHitCount from "../models/PostHitCount.js"
+import lookup from "../common/LookUp.js"
 
 class Posts {
     static create = asyncWrapper(async (req, res) => {
@@ -66,7 +69,22 @@ class Posts {
                     email: '$user.email'
                 }
             }]
-        ).then((post) => {
+        ).then(async (post) => {
+            const userData = tokenDecode(req.headers.authorization);
+            PostHitCount.findOne({ postId: req.params.postId, userId: userData._id }).then(async (hitCount) => {
+                if (!hitCount) {
+                    const postHitCount = new PostHitCount({
+                        postId: req.params.postId,
+                        userId: userData._id
+                    });
+                    try {
+                        await postHitCount.save();
+                    } catch (err) {
+                        let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                        return res.send(data);
+                    }
+                }
+            })
             let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
             return res.send(data);
         })
@@ -91,20 +109,8 @@ class Posts {
         }
 
         Post.aggregate([
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'createdBy',
-                    foreignField: '_id',
-                    as: 'user'
-                }
-            },
-            {
-                $unwind: {
-                    path: '$user',
-                    preserveNullAndEmptyArrays: true
-                }
-            },
+            ...lookup("users", "createdBy", "_id", "user"),
+
             filter,
             {
                 $project: {
@@ -122,8 +128,14 @@ class Posts {
                     // imagePath: "$imagePath",
                 }
             },
+
             { $sort: { created: -1 } }
-        ]).then((allPost) => {
+        ]).then(async (allPost) => {
+            allPost.map(async (item, i) => {
+                const count = await PostHitCount.countDocuments({ postId: mongoose.Types.ObjectId(item._id ) })
+                item['count'] = count;
+            })
+            await delay(500)
             let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', allPost);
             return res.send(data);
         }).catch((err) => {
@@ -178,7 +190,7 @@ class Posts {
             }, { new: true })
                 .then(async (newPost) => {
                     await delay(500);
-                    await Bookmark.updateMany({postId: mongoose.Types.ObjectId(req.params.postId) }, { status: req.body.status }, { new: true })
+                    await Bookmark.updateMany({ postId: mongoose.Types.ObjectId(req.params.postId) }, { status: req.body.status }, { new: true })
                     // Bookmark.aggregate([
                     //     {
                     //         $match: {
@@ -491,7 +503,6 @@ class Posts {
                             await Post.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.postId), { status: false })
                                 .then(async (reportPost) => {
                                     await delay(500);
-                                    await Bookmark.updateMany({postId: mongoose.Types.ObjectId(req.params.postId) }, { status: false }, { new: true })
                                     // Bookmark.aggregate([
                                     //     {
                                     //         $match: {
@@ -504,19 +515,20 @@ class Posts {
                                     //         await Bookmark.findByIdAndUpdate(item._id, { status: false }, { new: true });
                                     //     })
                                     // })
-                                    .then(async (nofion) => {
-                                        const notification = new Notification({
-                                            owner: reportPost.createdBy,
-                                            postId: req.body.postId,
-                                            description: `Your post ${reportPost.title} has been blocked due to multiple reports`
+                                    await Bookmark.updateMany({ postId: mongoose.Types.ObjectId(req.params.postId) }, { status: false }, { new: true })
+                                        .then(async (nofion) => {
+                                            const notification = new Notification({
+                                                owner: reportPost.createdBy,
+                                                postId: req.body.postId,
+                                                description: `Your post ${reportPost.title} has been blocked due to multiple reports`
+                                            })
+                                            try {
+                                                await notification.save();
+                                            } catch (err) {
+                                                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                                                return res.send(data);
+                                            }
                                         })
-                                        try {
-                                            await notification.save();
-                                        } catch (err) {
-                                            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
-                                            return res.send(data);
-                                        }
-                                    })
                                     let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your report is successfully added', reportPost);
                                     return res.send(data);
                                 })
@@ -597,6 +609,7 @@ class Posts {
             accountId: req.body.accountId,
             userId: req.body.userId,
             description: req.body.description,
+            type: req.body.type
             // imagePath: req.file.filename
         });
         try {

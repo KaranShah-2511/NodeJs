@@ -25,7 +25,7 @@ connectDB(DATABASE_URL)
 
 app.use('/admin', admin)
 app.use('/tasks', tasks)
-app.use('/auth',users)
+app.use('/user',users)
 app.use('/post',posts)
 app.use(notFound)
 app.use(errorHandler)
