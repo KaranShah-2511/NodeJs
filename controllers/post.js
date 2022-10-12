@@ -98,7 +98,7 @@ class Posts {
                     }
                 }
             })
-            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', ...post);
             return res.send(data);
         })
     })
