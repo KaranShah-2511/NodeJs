@@ -71,6 +71,14 @@ class Posts {
             }]
         ).then(async (post) => {
             const userData = tokenDecode(req.headers.authorization);
+            // const likeOrnot = await Like.findOne({ postId: req.params.postId, userId: userData._id });
+            await Like.findOne({ postId: req.params.postId, userId: userData._id }).then(() => {
+                post[0].likeOrnot = true;
+            }).catch(() => {
+                post[0].likeOrnot = false;
+            });
+
+
             PostHitCount.findOne({ postId: req.params.postId, userId: userData._id }).then(async (hitCount) => {
                 if (!hitCount) {
                     const postHitCount = new PostHitCount({
@@ -132,7 +140,7 @@ class Posts {
             { $sort: { created: -1 } }
         ]).then(async (allPost) => {
             allPost.map(async (item, i) => {
-                const count = await PostHitCount.countDocuments({ postId: mongoose.Types.ObjectId(item._id ) })
+                const count = await PostHitCount.countDocuments({ postId: mongoose.Types.ObjectId(item._id) })
                 item['count'] = count;
             })
             await delay(500)
