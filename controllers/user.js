@@ -20,7 +20,8 @@ class Users {
                 });
             } else {
                 user.hash_password = undefined;
-                return res.json(user);
+                let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'User registered', (user));
+                return res.send(data);
             }
         });
     })
@@ -53,8 +54,9 @@ class Users {
                             Token: '$Token',
                             UserType: '$userType'
                         }
-                    }], (err, data) => {
-                        res.status(200).json(data)
+                    }], (err, loginData) => {
+                        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', (loginData));
+                        return res.send(data);
                     })
                 })
 

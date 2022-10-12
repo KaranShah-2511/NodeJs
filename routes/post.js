@@ -8,7 +8,7 @@ router.post('/', Auth, Posts.create);
 
 // router.post('/', Auth, upload.single('image'), Posts.create);
 
-router.get('/', Auth, Posts.getPosts);
+router.post('/getallpost', Auth, Posts.getPosts);
 
 router.get('/singlepost/:postId', Auth, Posts.getSinglePost);
 
