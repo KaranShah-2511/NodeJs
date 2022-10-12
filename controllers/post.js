@@ -72,11 +72,11 @@ class Posts {
         ).then(async (post) => {
             const userData = tokenDecode(req.headers.authorization);
             // const likeOrnot = await Like.findOne({ postId: req.params.postId, userId: userData._id });
-            await Like.findOne({ postId: req.params.postId, likedBy:  mongoose.Types.ObjectId(userData._id )}).then((data) => {
+            await Like.findOne({ postId: req.params.postId, likedBy: mongoose.Types.ObjectId(userData._id) }).then((data) => {
                 if (data) {
-                post[0].isLiked = true;
+                    post[0].isLiked = data.status;
                 } else {
-                post[0].isLiked = false;
+                    post[0].isLiked = 0;
                 }
             }).catch((e) => {
                 let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
