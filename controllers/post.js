@@ -82,7 +82,24 @@ class Posts {
                 let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
                 return res.send(data);
             });
+            await delay(100);
 
+            await Bookmark.findOne({
+                postId: req.params.postId,
+                userId: mongoose.Types.ObjectId(userData._id)
+            }).then((data) => {
+                console.log('data', data)
+                if (data) {
+                    post[0].isBookmarked = data.isBookmark;
+                }
+                else {
+                    post[0].isBookmarked = false;
+                }
+            }).catch((e) => {
+                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                return res.send(data);
+            });
+            await delay(100);
             await PostHitCount.aggregate([{
                 $match: {
                     $and: [
