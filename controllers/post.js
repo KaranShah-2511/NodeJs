@@ -83,21 +83,65 @@ class Posts {
                 return res.send(data);
             });
 
-
-            PostHitCount.findOne({ postId: req.params.postId, userId: userData._id }).then(async (hitCount) => {
-                if (!hitCount) {
+            await PostHitCount.aggregate([{
+                $match: {
+                    $and: [
+                        {
+                            postId: mongoose.Types.ObjectId(req.params.postId)
+                        },
+                        {
+                            userId: mongoose.Types.ObjectId(userData._id)
+                        }
+                    ]
+                }
+            }]).then(async (data) => {
+                if (data.length > 0) {
+                    post[0].isViewed = true;
+                } else {
                     const postHitCount = new PostHitCount({
                         postId: req.params.postId,
                         userId: userData._id
                     });
                     try {
-                        await postHitCount.save();
+                        await delay(100);
+                        PostHitCount.findOne({ $and: [{ postId: mongoose.Types.ObjectId(req.params.postId) }, { userId: mongoose.Types.ObjectId(userData._id) }] }).then(async (count) => {
+                            if (!count) {
+                                await delay(100);
+                                await postHitCount.save();
+                            }
+                        });
                     } catch (err) {
                         let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
                         return res.send(data);
                     }
                 }
-            })
+            }).catch((e) => {
+                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                return res.send(data);
+            });
+
+
+            // PostHitCount.findOne({ postId: mongoose.Types.ObjectId(req.params.postId), userId: mongoose.Types.ObjectId(userData._id) }).then(async (hitCount) => {
+            //     if (!hitCount) {
+            //         const postHitCount = new PostHitCount({
+            //             postId: req.params.postId,
+            //             userId: userData._id
+            //         });
+            //         console.log('postHitCount', postHitCount)
+            //         try {
+            //             await delay(100);
+            //             PostHitCount.findOne({ $and: [{ postId: mongoose.Types.ObjectId(req.params.postId) }, { userId: mongoose.Types.ObjectId(userData._id) }] }).then(async (count) => {
+            //                 if (!count) {
+            //                     await delay(100);
+            //                     await postHitCount.save();
+            //                 }
+            //             });
+            //         } catch (err) {
+            //             let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+            //             return res.send(data);
+            //         }
+            //     }
+            // })
             let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', ...post);
             return res.send(data);
         })
