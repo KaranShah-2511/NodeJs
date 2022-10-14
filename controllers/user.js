@@ -99,7 +99,10 @@ class Users {
                 dislikes: '$post.dislikes',
                 viewed: '$viewed',
                 name: '$user.fullName',
-                email: '$user.email'
+                email: '$user.email',
+                createdBy: '$post.createdBy',
+                created: "$post.created",
+                status: "$post.status",
             }
         }]).then((history) => {
             let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', history);
