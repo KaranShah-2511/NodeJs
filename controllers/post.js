@@ -66,7 +66,9 @@ class Posts {
                     dislikes: '$dislikes',
                     created: '$created',
                     name: '$user.fullName',
-                    email: '$user.email'
+                    email: '$user.email',
+                    createdBy: '$createdBy',
+                    status: '$status'
                 }
             }]
         ).then(async (post) => {
