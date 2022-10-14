@@ -19,9 +19,9 @@ app.use(express.json())
 
 connectDB(DATABASE_URL)
 
-// app.get('/hello', (req, res) => {
-//     res.send('Hello World')
-// })
+app.get('/hello', (req, res) => {
+    res.send('Hello World')
+})
 
 app.use('/admin', admin)
 app.use('/tasks', tasks)
