@@ -90,7 +90,6 @@ class Posts {
                 postId: req.params.postId,
                 userId: mongoose.Types.ObjectId(userData._id)
             }).then((data) => {
-                console.log('data', data)
                 if (data) {
                     post[0].isBookmarked = data.isBookmark;
                 }
@@ -464,10 +463,10 @@ class Posts {
         //     let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', userBM);
         //     return res.send(data);
         // })
-
+        const userData = tokenDecode(req.headers.authorization);
         Bookmark.aggregate([{
             $match: {
-                userId: mongoose.Types.ObjectId(req.params.userId)
+                userId: mongoose.Types.ObjectId(userData._id)
             }
         }, {
             $lookup: {
@@ -495,7 +494,7 @@ class Posts {
             }
         }, {
             $project: {
-                _id: '$_id',
+                _id: '$post._id',
                 title: '$post.title',
                 description: '$post.description',
                 tags: '$post.tags',

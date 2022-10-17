@@ -26,7 +26,7 @@ router.get('/likepost/:postId', Auth, Posts.likeUsers);
 
 router.post('/bookmark', Auth, Posts.bookmark);
 
-router.get('/bookmark/:userId', Auth, Posts.userBookmark);
+router.get('/bookmark', Auth, Posts.userBookmark);
 
 router.post('/comment', Auth, Posts.comment);
 
