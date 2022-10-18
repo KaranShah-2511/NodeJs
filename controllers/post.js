@@ -81,7 +81,7 @@ class Posts {
                     post[0].isLiked = 0;
                 }
             }).catch((e) => {
-                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
                 return res.send(data);
             });
             await delay(100);
@@ -290,7 +290,11 @@ class Posts {
     })
 
     static deletePost = asyncWrapper(async (req, res) => {
-        Post.findByIdAndDelete({ _id: req.params.postId }, { new: true }).then((postDelete) => {
+        Post.findByIdAndDelete({ _id: req.params.postId }, { new: true }).then(async (postDelete) => {
+            // await PostHitCount.findByIdAndDelete({ postId: mongoose.Types.ObjectId(req.params.postId) }, { new: true })
+            // await Bookmark.findByIdAndDelete({ postId: mongoose.Types.ObjectId(req.params.postId) }, { new: true })
+            await PostHitCount.deleteMany({ postId: mongoose.Types.ObjectId(req.params.postId) }, { new: true })
+            await Bookmark.deleteMany({ postId: mongoose.Types.ObjectId(req.params.postId) }, { new: true })
             let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your post is successfully delete', postDelete);
             return res.send(data);
         })
