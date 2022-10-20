@@ -4,18 +4,25 @@ const { Schema } = mongoose;
 
 
 const CommentSchema = new mongoose.Schema({
-    userId: {
+    userId: {      //User Who comment on post
         type: Schema.Types.ObjectId,
         required: true
     },
-    postId: {
+    parentId: {   // post Id or Unique comment Id
         type: Schema.Types.ObjectId,
         required: true
+    },
+    parentCommentId: {   // parent comment Id
+        type: Schema.Types.ObjectId,
     },
     comment: {
         type: String,
         required: true
-    }
+    },
+    created: {
+        type: Date,
+        default: Date.now
+    },
 }, {
     versionKey: false
 })

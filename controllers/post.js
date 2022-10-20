@@ -517,8 +517,9 @@ class Posts {
     static comment = asyncWrapper(async (req, res) => {
         const comment = new Comment({
             userId: req.body.userId,
-            postId: req.body.postId,
+            parentId: req.body.parentId,
             comment: req.body.comment,
+            parentCommentId: req.body.parentCommentId,
         });
         try {
             await comment.save();
@@ -533,28 +534,69 @@ class Posts {
     static getComment = asyncWrapper(async (req, res) => {
         Comment.aggregate([{
             $match: {
-                postId: mongoose.Types.ObjectId(req.params.postId)
+                parentId: mongoose.Types.ObjectId(req.params.postId)
             }
-        }, {
-            $lookup: {
-                from: 'users',
-                localField: 'userId',
-                foreignField: '_id',
-                as: 'user'
-            }
-        }, {
-            $unwind: {
-                path: '$user',
-                preserveNullAndEmptyArrays: true
-            }
-        }, {
+        },
+        ...lookup("users", "userId", "_id", "user"),
+        {
             $project: {
                 name: '$user.fullName',
                 email: '$user.email',
-                comment: '$comment'
+                comment: '$comment',
+                created: '$created',
+                parentId: '$_id',
+                parentCommentId: '$_id',
             }
-        }]).then((post) => {
-            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
+        }]).then(async (comments) => {
+            comments.map(async (item, i) => {
+
+                Comment.aggregate([{
+                    $match: {
+                        parentId: mongoose.Types.ObjectId(item._id)
+                    }
+                },
+                ...lookup("users", "userId", "_id", "user"),
+                {
+                    $project: {
+                        name: '$user.fullName',
+                        email: '$user.email',
+                        comment: '$comment',
+                        parentId: '$parentId',
+                        parentCommentId: '$parentCommentId',
+                        created: '$created',
+                    }
+                }]).then((re) => {
+                    item['subComments'] = re;
+                    re.map((item1, i) => {
+                        if (item1.parentCommentId) {
+                            Comment.aggregate([{
+                                $match: {
+                                    _id: mongoose.Types.ObjectId(item1.parentCommentId)
+                                }
+                            },
+                            ...lookup("users", "userId", "_id", "parent"),
+                            {
+                                $project: {
+                                    name: '$user.fullName',
+                                    email: '$user.email',
+                                    parentName: '$parent.fullName',
+                                    comment: '$comment',
+                                    parentCommentId: '$parentCommentId',
+                                    created: '$created',
+                                }
+                            }]).then((re1) => {
+                                item1['parent'] = re1[0].parentName;
+                            })
+
+
+                        }
+                    })
+                })
+
+
+            })
+            await delay(500)
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', comments);
             return res.send(data);
         })
     })
