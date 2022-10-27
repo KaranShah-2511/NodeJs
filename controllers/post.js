@@ -36,6 +36,7 @@ class Posts {
     })
 
     static getSinglePost = asyncWrapper(async (req, res) => {
+        console.log('Hello')
         // const post = await Post.findById(req.params.postId);
         // let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
         // return res.send(data);
@@ -113,6 +114,7 @@ class Posts {
                     ]
                 }
             }]).then(async (data) => {
+                await delay(100);
                 if (data.length > 0) {
                     post[0].isViewed = true;
                 } else {
