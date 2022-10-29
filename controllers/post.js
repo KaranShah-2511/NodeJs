@@ -36,7 +36,6 @@ class Posts {
     })
 
     static getSinglePost = asyncWrapper(async (req, res) => {
-        console.log('Hello')
         // const post = await Post.findById(req.params.postId);
         // let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
         // return res.send(data);
@@ -98,7 +97,7 @@ class Posts {
                     post[0].isBookmarked = false;
                 }
             }).catch((e) => {
-                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
                 return res.send(data);
             });
             await delay(100);
@@ -222,9 +221,15 @@ class Posts {
     });
 
     static getUserPosts = asyncWrapper(async (req, res) => {
+        const userData = tokenDecode(req.headers.authorization);
+        // const owner = (req.params.userId != userData._id) ? true : '';
+        const owner = '';
+        // let filter = { "$match": { $and: [{ status: true }] } };
+        let filter = (req.params.userId != userData._id) ? { "$match": { $and: [{ status: true }, { createdBy: mongoose.Types.ObjectId(req.params.userId) }] } } : { "$match": { $and: [{ createdBy: (mongoose.Types.ObjectId(req.params.userId)) }] } };
         Post.aggregate(
             [
-                { $match: { createdBy: (mongoose.Types.ObjectId(req.params.userId)) } },
+                // { $match: { createdBy: (mongoose.Types.ObjectId(req.params.userId)) } },
+                filter,
                 {
                     $project: {
                         title: '$title',
@@ -235,6 +240,7 @@ class Posts {
                         status: "$status",
                         likes: "$likes",
                         dislikes: "$dislikes",
+
                         // imagePath: "$imagePath"
                     }
                 },

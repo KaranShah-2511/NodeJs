@@ -25,8 +25,8 @@ app.get('/hello', (req, res) => {
 
 app.use('/admin', admin)
 app.use('/tasks', tasks)
-app.use('/user',users)
-app.use('/post',posts)
+app.use('/user', users)
+app.use('/post', posts)
 app.use(notFound)
 app.use(errorHandler)
 

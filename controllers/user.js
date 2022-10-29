@@ -76,7 +76,10 @@ class Users {
                     FullName: '$fullName',
                     _id: '$_id'
                 }
-            }]).then((data) => res.send(data))
+            }]).then((profile) => {
+                let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', ...profile);
+                return res.send(data);
+            })
         });
     })
 
