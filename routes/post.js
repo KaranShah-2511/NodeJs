@@ -2,7 +2,10 @@ import express from 'express';
 const router = express.Router();
 import Posts from "../controllers/post.js";
 import Auth from "../middleware/authentication.js";
+import IsBlock from "../middleware/accountStatus.js";
 import upload from '../middleware/fileUpload.js';
+
+//add IsBlock after Auth
 
 router.post('/', Auth, Posts.create);
 
@@ -38,9 +41,7 @@ router.post('/accountreport', Auth, Posts.accReport);
 
 router.post('/unblockreq', Auth, Posts.unblockReq);
 
-router.get('/notification/:userId', Auth, Posts.getNotification);
 
-router.delete('/notification/:notificationId', Auth, Posts.deleteNotification);
 
 router.post('/singleimage', Auth, upload.single('image'), Posts.uploadImage);
 

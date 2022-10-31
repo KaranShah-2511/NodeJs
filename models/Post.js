@@ -38,7 +38,11 @@ const PostSchema = new mongoose.Schema({
     },
     imagePath: {
         type: String,
-    }
+    },
+    blocked: {
+        type: Boolean,
+        default: false
+    },
 }, {
     versionKey: false
 })

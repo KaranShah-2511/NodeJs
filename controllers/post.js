@@ -68,7 +68,8 @@ class Posts {
                     name: '$user.fullName',
                     email: '$user.email',
                     createdBy: '$createdBy',
-                    status: '$status'
+                    status: '$status',
+                    blocked: '$blocked',
                 }
             }]
         ).then(async (post) => {
@@ -240,6 +241,7 @@ class Posts {
                         status: "$status",
                         likes: "$likes",
                         dislikes: "$dislikes",
+                        blocked: "$blocked",
 
                         // imagePath: "$imagePath"
                     }
@@ -256,10 +258,9 @@ class Posts {
     });
 
     static updatePost = asyncWrapper(async (req, res) => {
-        const count = await Report.countDocuments({ postId: mongoose.Types.ObjectId(req.body.postId) })
-
+        const count = await Report.countDocuments({ postId: mongoose.Types.ObjectId(req.params.postId) })
         if (count > 3) {
-            let data = Response(Constants.RESULT_CODE.Forbidden, Constants.RESULT_FLAG.FAIL, 'Post has been removed due to multiple reports');
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.FAIL, 'Post has been removed due to multiple reports');
             return res.send(data);
         } else {
             await Post.findByIdAndUpdate({ _id: req.params.postId }, {
@@ -623,12 +624,13 @@ class Posts {
                 const report = new Report({
                     userId: req.body.userId,
                     postId: req.body.postId,
-                    reason: req.body.reason,
+                    description: req.body.description,
                 });
                 try {
                     await report.save().then(async (da) => {
                         const count = await Report.countDocuments({ postId: mongoose.Types.ObjectId(req.body.postId) })
                         if (count > 3) {
+                            await Post.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.postId), { blocked: true })
                             await Post.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.postId), { status: false })
                                 .then(async (reportPost) => {
                                     await delay(500);
@@ -658,8 +660,11 @@ class Posts {
                                                 return res.send(data);
                                             }
                                         })
+
                                     let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your report is successfully added', reportPost);
                                     return res.send(data);
+
+
                                 })
                                 .catch((err) => {
                                     let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
@@ -692,7 +697,7 @@ class Posts {
                 const report = new Report({
                     userId: req.body.userId,
                     accountId: req.body.accountId,
-                    reason: req.body.reason,
+                    description: req.body.description,
                 });
                 try {
                     await report.save().then(async (da) => {
@@ -752,13 +757,28 @@ class Posts {
     })
 
     static getNotification = asyncWrapper(async (req, res) => {
-        Notification.aggregate([{
-            $match: {
-                owner: mongoose.Types.ObjectId(req.params.userId)
-            }
-        },
-        { $sort: { created: -1 } }
-        ]).then((notification) => {
+        Notification.aggregate(
+            [{
+                $match: {
+                    owner: mongoose.Types.ObjectId(req.params.userId)
+                }
+            },
+            ...lookup('posts', 'postId', '_id', 'post'),
+           {
+                $sort: {
+                    created: -1
+                }
+            }, {
+                $project: {
+                    id: "$id",
+                    owner: "$owner",
+                    postId: "$postId",
+                    description: "$description",
+                    created: "$created",
+                    title: "$post.title",
+                }
+            }]
+        ).then((notification) => {
             let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', notification);
             return res.send(data);
         })
