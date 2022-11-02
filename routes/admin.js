@@ -5,6 +5,12 @@ const router = express.Router();
 
 router.get('/', Auth, Admin.allUser);
 
+router.get('/usercount', Auth, Admin.getUserCount);
+
+router.post('/userpostcount', Auth, Admin.getUserPostCount);
+
+router.get('/postcount', Auth, Admin.getPostCount);
+
 router.get('/blockusers', Auth, Admin.blockUser);
 
 router.get('/repotedpost', Auth, Admin.reportedPost);

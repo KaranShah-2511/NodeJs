@@ -157,6 +157,99 @@
 					"response": []
 				},
 				{
+					"name": "Get User  post Count",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Auth}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"year\":\"\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/admin/userpostcount",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"admin",
+								"userpostcount"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get post count with user",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Auth}}",
+								"type": "default"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/admin/postcount",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"admin",
+								"postcount"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User month Count",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Auth}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"month\":\"\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/admin/usercount",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"admin",
+								"usercount"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Block user",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -533,7 +626,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"userId\": \"6322a81ecc2c62339d8d085f\",\r\n    \"postId\": \"632d4ea18793a284d9fe515f\",\r\n    \"reason\": \"Harmfull content\"\r\n}",
+							"raw": "{\r\n    \"description\": \"Not good post\",\r\n    \"postId\": \"635fc237c3f7b9c6ce1c96cc\",\r\n    \"userId\": \"6350eaa155a7154b2cfa0a59\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -599,7 +692,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"postId\": \"632d4ea18793a284d9fe516f\",\r\n    \"accountId\":\"6322a81ecc2c62339d8d084f\",\r\n    \"userId\": \"6322a81ecc2c62339d8d084f\",\r\n    \"description\": \"Fake reports can you review my post\",\r\n    \"type\":\"Account\"\r\n}",
+							"raw": "{\r\n    \"postId\": \"632d4ea18793a284d9fe516f\",\r\n    \"accountId\":\"6322a81ecc2c62339d8d084f\",   //PostId or AccountId\r\n    \"userId\": \"6322a81ecc2c62339d8d084f\",\r\n    \"description\": \"Fake reports can you review my post\",\r\n    \"type\":\"Account\"   // Account or Post\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -821,14 +914,14 @@
 							}
 						],
 						"url": {
-							"raw": "{{host}}/post/notification/6322a81ecc2c62339d8d084f",
+							"raw": "{{host}}/user/notification/6350ea5e55a7154b2cfa0a47",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"post",
+								"user",
 								"notification",
-								"6322a81ecc2c62339d8d084f"
+								"6350ea5e55a7154b2cfa0a47"
 							]
 						}
 					},
@@ -846,14 +939,14 @@
 							}
 						],
 						"url": {
-							"raw": "{{host}}/post/notification/633436ab0ee91ff6bc4eee38",
+							"raw": "{{host}}/user/notification/635f530021401337dfd29bd4",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"post",
+								"user",
 								"notification",
-								"633436ab0ee91ff6bc4eee38"
+								"635f530021401337dfd29bd4"
 							]
 						}
 					},
@@ -871,12 +964,12 @@
 							}
 						],
 						"url": {
-							"raw": "{{host}}/auth/profile/632d7c7b76b6ebd3cad5b439",
+							"raw": "{{host}}/user/profile/632d7c7b76b6ebd3cad5b439",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"auth",
+								"user",
 								"profile",
 								"632d7c7b76b6ebd3cad5b439"
 							]

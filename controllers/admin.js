@@ -38,11 +38,152 @@ class Admin {
       })
   })
 
+  static getUserCount = asyncWrapper(async (req, res) => {
+
+    User.aggregate([
+      { "$match": { $and: [{ userType: "User", status: true }] } },
+      { "$group": { _id: null, TotalUsercount: { $sum: 1 } } }
+    ])
+      .then((users) => {
+        var diffMonth = 0 + (req.body.month != '' ? req.body.month : 1);
+        var date = new Date(), y = date.getFullYear(), m = date.getMonth();
+        var firstDay = new Date(y, m - (diffMonth - 1), 1);
+        var lastDay = new Date(y, m + 1, 2);
+        User.find({
+          created: {
+            $gte: firstDay,
+            $lt: lastDay
+          }
+
+        })
+          .then((users1) => {
+            users[0]["filterCount"] = users1.length
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', { users });
+            return res.send(data);
+          })
+
+        // let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', users);
+        // return res.send(data);
+      })
+  })
+
+  static getUserPostCount = asyncWrapper(async (req, res) => {
+
+    const year = req.body.year || new Date().getFullYear();
+    const user = []; const post = []; const reportData = [];
+    let userCount = 0;
+
+    for (let i = 0; i <= 11; i++) {
+      const start = new Date(year, i, 1);
+      const end = new Date(year, i + 1, 1);
+      // const start = new Date(year, i, 2);
+      // const end = new Date(year, i+1 , 1);
+
+
+      User.find({
+        "userType": "User",
+        "created": {
+          "$gt": start,
+          "$lte": end
+        }
+        // created: {$gt: start,$lt: end},userType:"User"
+      })
+        .then(async (res) => {
+
+          user.splice(i, 0,
+            res.length
+          );
+          await delay(500)
+        })
+
+      Post.find({
+        "created": {
+          "$gt": start,
+          "$lte": end
+        }
+      })
+        .then(async (res) => {
+          post.splice(i, 0,
+            res.length
+          );
+          await delay(500)
+        })
+
+      Report.find({
+        "created": {
+          "$gt": start,
+          "$lte": end
+        }
+      })
+        .then(async (res) => {
+          reportData.splice(i, 0,
+            res.length
+          );
+          await delay(500)
+        })
+    }
+
+    await delay(500)
+    const count = { user, post, reportData }
+    let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', count);
+    return res.send(data);
+
+  })
+
+  static getPostCount = asyncWrapper(async (req, res) => {
+    const user = [];
+    const count = [];
+    Post.aggregate([{
+      $group: {
+        _id: '$createdBy',
+        count: {
+          $sum: 1
+        }
+      }
+    }, {
+      $lookup: {
+        from: 'users',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'user'
+      }
+    }, {
+      $sort: {
+        count: -1
+      }
+    }, {
+      $unwind: {
+        path: '$user',
+        preserveNullAndEmptyArrays: true
+      }
+    }, {
+      $project: {
+        name: '$user.fullName',
+        count: '$count'
+      }
+    }]).then((value) => {
+      // value.forEach((element) => {
+      //   user.push(element.name);
+      //   count.push(element.count);
+      // });
+      value.map((name, i) => {
+        user.splice(i, 0,
+          name.name
+        );
+        count.splice(i, 0,
+          name.count
+        );
+      })
+      let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', { user, count });
+      return res.send(data);
+    })
+  })
+
   static blockUser = asyncWrapper(async (req, res) => {
     let filter = { "$match": { $and: [{ userType: "User", status: false }] } };
     const searchField = ["fullName", "email"];
 
- 
+
     if (req.body.Searchby != '' && req.body.Searchby != null) {
 
       const Searchbys = (typeof req.body.Searchby === 'object') ? req.body.Searchby : [req.body.Searchby];
