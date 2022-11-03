@@ -299,19 +299,11 @@ class Admin {
           type: 'Post'
         }
       },
-      ...lookup("posts", "postId", "_id", "post"),
       ...lookup("users", "userId", "_id", "user"),
       {
         $project: {
           _id: '$_id',
-          title: '$post.title',
-          description: '$post.description',
-          tags: '$post.tags',
-          createdBy: '$post.createdBy',
-          created: '$post.created',
-          status: '$post.status',
-          likes: '$post.likes',
-          dislikes: '$post.dislikes',
+          postId: '$postId',
           TotalReport: '$count',
           name: '$user.fullName',
           email: '$user.email',
@@ -325,15 +317,19 @@ class Admin {
   })
 
   static getAllAccReq = asyncWrapper(async (req, res) => {
-    UnblockReq.aggregate([{ $match: { type: 'Account' } },
-    ...lookup("users", "userId", "_id", "user"),
+    UnblockReq.aggregate([{
+      $match: {
+        type: 'Account'
+      }
+    },
+    ...lookup("users", "accountId", "_id", "user"),
     {
       $project: {
         _id: '$_id',
         name: '$user.fullName',
         email: '$user.email',
-        type: "$type",
-        ReqDescription: "$description"
+        type: '$type',
+        ReqDescription: '$description'
       }
     }]).then((allreq) => {
       let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', allreq);
