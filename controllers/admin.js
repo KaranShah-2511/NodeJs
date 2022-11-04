@@ -11,6 +11,7 @@ import delay from "../common/Delay.js"
 import UnblockReq from "../models/UnblockReq.js"
 import lookup from "../common/LookUp.js"
 import Notification from "../models/Notification.js"
+import PostHitCount from "../models/PostHitCount.js"
 
 class Admin {
 
@@ -312,6 +313,73 @@ class Admin {
         }
       }]).then((allreq) => {
         let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', allreq);
+        return res.send(data);
+      })
+  })
+
+  static getLikeViewCount = asyncWrapper(async (req, res) => {
+    const user = [];
+    const likeCount = [];
+    const viewCount = [];
+    const userList = [];
+    Post.aggregate([{
+      $group: {
+        _id: '$createdBy',
+        count: {
+          $sum: '$likes'
+        },
+        postId: { $first: "$_id" }
+      }
+    },
+    ...lookup("users", "_id", "_id", "user"),
+    {
+      $project: {
+        name: '$user.fullName',
+        count: '$count',
+        postId: "$postId",
+        ownerId: "$user._id"
+
+      }
+    }, { $sort: { count: -1 } }])
+      .then(async (value) => {
+        value.map((name, i) => {
+          user.splice(i, 0, name.name);
+          likeCount.splice(i, 0, name.count);
+          Post.find({ createdBy: name.ownerId.toHexString(), status: true }
+          ).then((posts) => {
+            posts.map((userPost, x) => {
+              const add = 0;
+              PostHitCount.aggregate([{
+                $match: {
+                  postId: mongoose.Types.ObjectId(userPost._id)
+                }
+              }, {
+                $group: {
+                  _id: '$postId',
+                  count: {
+                    $sum: 1
+                  }
+                }
+
+              }]).then(async (views) => {
+                let xyz = {
+                  postId: userPost._id.toHexString(),
+                  count: (views.length) ? views[0].count : 0,
+                  User: i
+                }
+                await userList.push(xyz)
+              }
+              )
+            })
+          })
+        })
+        await delay(500);
+        for (var i = 0; i < userList.length; i++) {
+          var obj = userList[i];
+          viewCount[obj.User] = viewCount[obj.User] === undefined ? 0 : viewCount[obj.User];
+          viewCount[obj.User] += parseInt(obj.count);
+        }
+        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', { user, likeCount, viewCount });
         return res.send(data);
       })
   })
