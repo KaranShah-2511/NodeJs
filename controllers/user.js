@@ -34,8 +34,8 @@ class Users {
             if (!user || !user.comparePassword(req.body.password)) {
                 return res.status(401).json({ message: 'Authentication failed. Invalid user or password.' });
             }
-            const updates = {}
-            updates["Token"] = jwt.sign({ email: user.email, fullName: user.fullName, _id: user._id }, 'RESTFULAPIs', {
+            const updates = {};
+            updates["Token"] = jwt.sign({ email: user.email, fullName: user.fullName, _id: user._id, status: user.status }, 'RESTFULAPIs', {
                 expiresIn: '2h',
             });
             User.findOneAndUpdate({ email: req.body.email }, {

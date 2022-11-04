@@ -157,7 +157,7 @@
 					"response": []
 				},
 				{
-					"name": "Get User  post Count",
+					"name": "Get User  post and report year Count",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -208,6 +208,32 @@
 							"path": [
 								"admin",
 								"postcount"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get user with their total likes and views",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Auth}}",
+								"type": "default"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/admin/user/likeviews/count",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"admin",
+								"user",
+								"likeviews",
+								"count"
 							]
 						}
 					},

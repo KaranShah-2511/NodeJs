@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get('/', Auth, Admin.allUser);
 
-router.get('/usercount', Auth, Admin.getUserCount);
+router.get('/usercount', Auth, Admin.getUserCount); 
 
 router.post('/userpostcount', Auth, Admin.getUserPostCount);
 
@@ -19,7 +19,7 @@ router.post('/repotedpost/:postId', Auth, Admin.reviewPost);
 
 router.get('/post/blockpost/req', Auth , Admin.getAllReq)
 
-router.get('/user/likeviews/count', Auth , Admin.getLikeViewCount)
+router.get('/user/likeviews/count', Auth , Admin.getLikeViewCount)   // userArry with like array ad view array
 
 router.get('/post/blockaccount/req', Auth , Admin.getAllAccReq)
 
