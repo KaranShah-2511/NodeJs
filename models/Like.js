@@ -11,8 +11,12 @@ const LikeSchema = new mongoose.Schema({
     status: {
         type: Number,
         enum: [-1, 0, 1]
-    }
-},{
+    },
+    created: {
+        type: Date,
+        default: Date.now
+    },
+}, {
     versionKey: false
 })
 

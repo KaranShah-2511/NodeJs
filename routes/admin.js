@@ -23,6 +23,14 @@ router.get('/user/likeviews/count', Auth , Admin.getLikeViewCount)   // userArry
 
 router.get('/post/blockaccount/req', Auth , Admin.getAllAccReq)
 
+router.get('/post/tenyear/report', Auth , Admin.getDecadeReport) // number of post in 10 year 
+
+router.post('/maxpost/tenyear/user', Auth , Admin.getMaxPostUser)
+
+router.get('/highestreported/user', Auth , Admin.getHighestReportedUser)
+
+router.get('/inactive/user', Auth , Admin.getInactiveUser)
+
 // router.get('/post/block/req', Auth , Admin.getAllReq)
 
 

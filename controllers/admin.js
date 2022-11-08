@@ -12,6 +12,9 @@ import UnblockReq from "../models/UnblockReq.js"
 import lookup from "../common/LookUp.js"
 import Notification from "../models/Notification.js"
 import PostHitCount from "../models/PostHitCount.js"
+import DummyPost from "../models/DummyPost.js"
+import Like from "../models/Like.js"
+import Comment from "../models/Comment.js"
 
 class Admin {
 
@@ -72,7 +75,7 @@ class Admin {
 
     const year = req.body.year || new Date().getFullYear();
     const user = []; const post = []; const reportData = [];
-    let userCount = 0;
+
 
     for (let i = 0; i <= 11; i++) {
       const start = new Date(year, i, 1);
@@ -403,6 +406,201 @@ class Admin {
       let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', allreq);
       return res.send(data);
     })
+  })
+
+  static getDecadeReport = asyncWrapper(async (req, res) => {
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const count = [];
+    const year = req.body.year || new Date().getFullYear();
+    const data =
+      // console.log('date', new Date(year - 10, new Date().getMonth(), 1), new Date())
+    DummyPost.aggregate([
+      {
+        $match: {
+          created: {
+            $gte: new Date(year - 10, new Date().getMonth(), 1),
+            $lte: new Date()
+          }
+        },
+      },
+      {
+        $addFields: {
+          date: {
+            $month: '$created'
+          }
+        }
+      }, {
+        $group: {
+          _id: '$date',
+          Totalcount: {
+            $sum: 1
+          }
+        }
+      }, {
+        $sort: {
+          _id: 1
+        }
+      }]).then((allPost) => {
+        allPost.map((item, i) => {
+          count.splice(i, 0, item.Totalcount);
+        })
+        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', { months, count });
+        return res.send(data);
+      })
+      .catch((e) => {
+        let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
+        return res.send(data);
+      })
+  })
+
+  static getMaxPostUser = asyncWrapper(async (req, res) => {
+    const orCondition = []
+    const months = req.body.monthArry;
+    if (months.length) {
+      months.map((item) => {
+        orCondition.push({ month: { $eq: item } })
+      })
+    }
+    else {
+      orCondition.push({})
+    }
+    DummyPost.aggregate([{
+      $addFields: {
+        month: {
+          $month: '$created'
+        }
+      }
+    }, {
+      $match: {
+        $or: orCondition
+      }
+    }, {
+      $group: {
+        _id: '$createdBy',
+        count: {
+          $sum: 1
+        }
+      }
+    }, {
+      $sort: {
+        count: -1
+      },
+    }, {
+      $project: {
+        userId: '$_id',
+        count: '$count'
+      }
+    }, {
+      $limit: 3
+    }
+    ]).then((allPost) => {
+      let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', allPost);
+      return res.send(data);
+    })
+
+  })
+
+  static getHighestReportedUser = asyncWrapper(async (req, res) => {
+    Report.aggregate([{
+      $lookup: {
+        from: 'posts',
+        localField: 'postId',
+        foreignField: '_id',
+        as: 'post'
+      }
+    }, {
+      $unwind: {
+        path: '$post',
+        preserveNullAndEmptyArrays: true
+      }
+    }, {
+      $group: {
+        _id: '$post.createdBy',
+        count: {
+          $sum: 1
+        }
+      }
+    }, {
+      $sort: {
+        count: -1
+      }
+    }, {
+      $project: {
+        count: '$count'
+      }
+    }, {
+      $lookup: {
+        from: 'users',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'user'
+      }
+    }, {
+      $unwind: {
+        path: '$user',
+        preserveNullAndEmptyArrays: true
+      }
+    }, {
+      $project: {
+        name: '$user.fullName',
+        email: '$user.email',
+        count: '$count'
+      }
+    }]).then((reporteduser) => {
+      let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', reporteduser);
+      return res.send(data);
+    })
+  })
+
+  static getInactiveUser = asyncWrapper(async (req, res) => {
+    const users = [];
+    const year = req.body.year || new Date().getFullYear();
+    const start = new Date(year, new Date().getMonth() - 1, 1)
+    const end = new Date()
+
+    User.find({ "userType": "User", }).then(async (user) => {
+      user.map((item, i) => {
+        Post.find({
+          created: {
+            $gt: start,
+            $lte: end
+          },
+          createdBy: mongoose.Types.ObjectId(item._id)
+        }).then((post) => {
+          if (post.length === 0) {
+            Like.find({
+              created: {
+                $gt: start,
+                $lte: end
+              },
+              likedBy: mongoose.Types.ObjectId(item._id)
+            })
+              .then((like) => {
+                if (like.length === 0) {
+                  Comment.find({
+                    created: {
+                      $gt: start,
+                      $lte: end
+                    },
+                    userId: mongoose.Types.ObjectId(item._id)
+                  })
+                    .then((comment) => {
+                      if (comment.length === 0) {
+                        users.push(item)
+                      }
+                    }
+                    )
+                }
+              }
+              )
+          }
+        })
+      })
+      await delay(500);
+      let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', users);
+      return res.send(data);
+    })
+
   })
 
 }
