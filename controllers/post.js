@@ -39,137 +39,148 @@ class Posts {
         // const post = await Post.findById(req.params.postId);
         // let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
         // return res.send(data);
-        Post.aggregate([
-            {
-                $match: {
-                    _id: mongoose.Types.ObjectId(req.params.postId)
-                }
-            }, {
-                $lookup: {
-                    from: 'users',
-                    localField: 'createdBy',
-                    foreignField: '_id',
-                    as: 'user'
-                }
-            }, {
-                $unwind: {
-                    path: '$user',
-                    preserveNullAndEmptyArrays: true
-                }
-            }, {
-                $project: {
-                    _id: '$_id',
-                    title: '$title',
-                    description: '$description',
-                    tags: '$tags',
-                    likes: '$likes',
-                    dislikes: '$dislikes',
-                    created: '$created',
-                    name: '$user.fullName',
-                    email: '$user.email',
-                    createdBy: '$createdBy',
-                    status: '$status',
-                    blocked: '$blocked',
-                }
-            }]
-        )
-            .then(async (post) => {
-                const userData = tokenDecode(req.headers.authorization);
-                // const likeOrnot = await Like.findOne({ postId: req.params.postId, userId: userData._id });
-                await Like.findOne({ postId: req.params.postId, likedBy: mongoose.Types.ObjectId(userData._id) }).then((data) => {
-                    if (data) {
-                        post[0].isLiked = data.status;
-                    } else {
-                        post[0].isLiked = 0;
-                    }
-                }).catch((e) => {
-                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
-                    return res.send(data);
-                });
-                await delay(100);
-
-                await Bookmark.findOne({
-                    postId: req.params.postId,
-                    userId: mongoose.Types.ObjectId(userData._id)
-                }).then((data) => {
-                    if (data) {
-                        post[0].isBookmarked = data.isBookmark;
-                    }
-                    else {
-                        post[0].isBookmarked = false;
-                    }
-                }).catch((e) => {
-                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
-                    return res.send(data);
-                });
-                await delay(100);
-                await PostHitCount.aggregate([{
-                    $match: {
-                        $and: [
-                            {
-                                postId: mongoose.Types.ObjectId(req.params.postId)
-                            },
-                            {
-                                userId: mongoose.Types.ObjectId(userData._id)
-                            }
-                        ]
-                    }
-                }]).then(async (data) => {
-                    await delay(100);
-                    if (data.length > 0) {
-                        post[0].isViewed = true;
-                    } else {
-                        const postHitCount = new PostHitCount({
-                            postId: req.params.postId,
-                            userId: userData._id
-                        });
-                        try {
-                            await delay(100);
-                            PostHitCount.findOne({ $and: [{ postId: mongoose.Types.ObjectId(req.params.postId) }, { userId: mongoose.Types.ObjectId(userData._id) }] }).then(async (count) => {
-                                if (!count) {
-                                    await delay(100);
-                                    await postHitCount.save();
-                                }
-                            });
-                        } catch (err) {
-                            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
-                            return res.send(data);
+        Post.countDocuments({_id: req.params.postId}, function (err, count) {
+            if (count > 0) {
+                Post.aggregate([
+                    {
+                        $match: {
+                            _id: mongoose.Types.ObjectId(req.params.postId)
                         }
-                    }
-                }).catch((e) => {
-                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
-                    return res.send(data);
-                });
+                    }, {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'createdBy',
+                            foreignField: '_id',
+                            as: 'user'
+                        }
+                    }, {
+                        $unwind: {
+                            path: '$user',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    }, {
+                        $project: {
+                            _id: '$_id',
+                            title: '$title',
+                            description: '$description',
+                            tags: '$tags',
+                            likes: '$likes',
+                            dislikes: '$dislikes',
+                            created: '$created',
+                            name: '$user.fullName',
+                            email: '$user.email',
+                            createdBy: '$createdBy',
+                            status: '$status',
+                            blocked: '$blocked',
+                        }
+                    }]
+                )
+                    .then(async (post) => {
+                        const userData = tokenDecode(req.headers.authorization);
+                        // const likeOrnot = await Like.findOne({ postId: req.params.postId, userId: userData._id });
+                        await Like.findOne({ postId: req.params.postId, likedBy: mongoose.Types.ObjectId(userData._id) }).then((data) => {
+                            if (data) {
+                                post[0].isLiked = data.status;
+                            } else {
+                                post[0].isLiked = 0;
+                            }
+                        }).catch((e) => {
+                            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
+                            return res.send(data);
+                        });
+                        await delay(100);
+
+                        await Bookmark.findOne({
+                            postId: req.params.postId,
+                            userId: mongoose.Types.ObjectId(userData._id)
+                        }).then((data) => {
+                            if (data) {
+                                post[0].isBookmarked = data.isBookmark;
+                            }
+                            else {
+                                post[0].isBookmarked = false;
+                            }
+                        }).catch((e) => {
+                            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
+                            return res.send(data);
+                        });
+                        await delay(100);
+                        await PostHitCount.aggregate([{
+                            $match: {
+                                $and: [
+                                    {
+                                        postId: mongoose.Types.ObjectId(req.params.postId)
+                                    },
+                                    {
+                                        userId: mongoose.Types.ObjectId(userData._id)
+                                    }
+                                ]
+                            }
+                        }]).then(async (data) => {
+                            await delay(100);
+                            if (data.length > 0) {
+                                post[0].isViewed = true;
+                            } else {
+                                const postHitCount = new PostHitCount({
+                                    postId: req.params.postId,
+                                    userId: userData._id
+                                });
+                                try {
+                                    await delay(100);
+                                    PostHitCount.findOne({ $and: [{ postId: mongoose.Types.ObjectId(req.params.postId) }, { userId: mongoose.Types.ObjectId(userData._id) }] }).then(async (count) => {
+                                        if (!count) {
+                                            await delay(100);
+                                            await postHitCount.save();
+                                        }
+                                    });
+                                } catch (err) {
+                                    let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                                    return res.send(data);
+                                }
+                            }
+                        }).catch((e) => {
+                            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
+                            return res.send(data);
+                        });
 
 
-                // PostHitCount.findOne({ postId: mongoose.Types.ObjectId(req.params.postId), userId: mongoose.Types.ObjectId(userData._id) }).then(async (hitCount) => {
-                //     if (!hitCount) {
-                //         const postHitCount = new PostHitCount({
-                //             postId: req.params.postId,
-                //             userId: userData._id
-                //         });
-                //         console.log('postHitCount', postHitCount)
-                //         try {
-                //             await delay(100);
-                //             PostHitCount.findOne({ $and: [{ postId: mongoose.Types.ObjectId(req.params.postId) }, { userId: mongoose.Types.ObjectId(userData._id) }] }).then(async (count) => {
-                //                 if (!count) {
-                //                     await delay(100);
-                //                     await postHitCount.save();
-                //                 }
-                //             });
-                //         } catch (err) {
-                //             let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
-                //             return res.send(data);
-                //         }
-                //     }
-                // })
-                let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', ...post);
+                        // PostHitCount.findOne({ postId: mongoose.Types.ObjectId(req.params.postId), userId: mongoose.Types.ObjectId(userData._id) }).then(async (hitCount) => {
+                        //     if (!hitCount) {
+                        //         const postHitCount = new PostHitCount({
+                        //             postId: req.params.postId,
+                        //             userId: userData._id
+                        //         });
+                        //         console.log('postHitCount', postHitCount)
+                        //         try {
+                        //             await delay(100);
+                        //             PostHitCount.findOne({ $and: [{ postId: mongoose.Types.ObjectId(req.params.postId) }, { userId: mongoose.Types.ObjectId(userData._id) }] }).then(async (count) => {
+                        //                 if (!count) {
+                        //                     await delay(100);
+                        //                     await postHitCount.save();
+                        //                 }
+                        //             });
+                        //         } catch (err) {
+                        //             let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+                        //             return res.send(data);
+                        //         }
+                        //     }
+                        // })
+                        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', ...post);
+                        return res.send(data);
+                    })
+                    .catch((e) => {
+                        let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
+                        return res.send(data);
+                    });
+            }
+
+            else {
+                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, 'No Post Found');
                 return res.send(data);
-            })
-            .catch((e) => {
-                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
-                return res.send(data);
-            });
+            }
+
+        });
+
     })
 
     static getPosts = asyncWrapper(async (req, res) => {

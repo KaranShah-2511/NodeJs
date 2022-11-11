@@ -308,7 +308,6 @@ class Admin {
         $project: {
           _id: '$_id',
           postId: '$postId',
-          TotalReport: '$count',
           name: '$user.fullName',
           email: '$user.email',
           type: "$type",
@@ -399,6 +398,7 @@ class Admin {
         _id: '$_id',
         name: '$user.fullName',
         email: '$user.email',
+        accountId: "$accountId",
         type: '$type',
         ReqDescription: '$description'
       }

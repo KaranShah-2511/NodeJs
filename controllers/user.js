@@ -79,6 +79,9 @@ class Users {
             }]).then((profile) => {
                 let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', ...profile);
                 return res.send(data);
+            }).catch((e) => {
+                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.ERROR, e);
+                return res.send(data);
             })
         });
     })
