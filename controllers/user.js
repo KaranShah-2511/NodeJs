@@ -35,7 +35,7 @@ class Users {
                 return res.status(401).json({ message: 'Authentication failed. Invalid user or password.' });
             }
             const updates = {};
-            updates["Token"] = jwt.sign({ email: user.email, fullName: user.fullName, _id: user._id, status: user.status }, 'RESTFULAPIs', {
+            updates["Token"] = jwt.sign({ email: user.email, fullName: user.fullName, _id: user._id, status: user.status, userType: user.userType }, 'RESTFULAPIs', {
                 expiresIn: '2h',
             });
             User.findOneAndUpdate({ email: req.body.email }, {

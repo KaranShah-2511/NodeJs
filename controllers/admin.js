@@ -15,6 +15,7 @@ import PostHitCount from "../models/PostHitCount.js"
 import DummyPost from "../models/DummyPost.js"
 import Like from "../models/Like.js"
 import Comment from "../models/Comment.js"
+import tokenDecode from "../common/TokenDecode.js"
 
 class Admin {
 
@@ -244,7 +245,7 @@ class Admin {
   })
 
   static reviewPost = asyncWrapper(async (req, res) => {
-    await Post.findByIdAndUpdate(req.params.postId, { status: req.body.status })
+    await Post.findByIdAndUpdate(req.params.postId, { status: req.body.status, blocked: !req.body.status })
       .then(async (reportPost) => {
         await delay(500);
         await Bookmark.updateMany({ postId: mongoose.Types.ObjectId(req.params.postId) }, { status: req.body.status }, { new: true })
@@ -287,6 +288,10 @@ class Admin {
               return res.send(data);
             }
           })
+        await UnblockReq.findOneAndUpdate({ postId: mongoose.Types.ObjectId(req.params.postId) },
+          { status: !req.body.status }, { new: true }
+        )
+        await delay(500);
         let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Your updated status', reportPost);
         return res.send(data);
       })
@@ -300,7 +305,8 @@ class Admin {
     UnblockReq.aggregate([
       {
         $match: {
-          type: 'Post'
+          type: 'Post',
+          status: true
         }
       },
       ...lookup("users", "userId", "_id", "user"),
@@ -414,43 +420,43 @@ class Admin {
     const year = req.body.year || new Date().getFullYear();
     const data =
       // console.log('date', new Date(year - 10, new Date().getMonth(), 1), new Date())
-    DummyPost.aggregate([
-      {
-        $match: {
-          created: {
-            $gte: new Date(year - 10, new Date().getMonth(), 1),
-            $lte: new Date()
-          }
+      DummyPost.aggregate([
+        {
+          $match: {
+            created: {
+              $gte: new Date(year - 10, new Date().getMonth(), 1),
+              $lte: new Date()
+            },
+          },
         },
-      },
-      {
-        $addFields: {
-          date: {
-            $month: '$created'
+        {
+          $addFields: {
+            date: {
+              $month: '$created'
+            }
           }
-        }
-      }, {
-        $group: {
-          _id: '$date',
-          Totalcount: {
-            $sum: 1
+        }, {
+          $group: {
+            _id: '$date',
+            Totalcount: {
+              $sum: 1
+            }
           }
-        }
-      }, {
-        $sort: {
-          _id: 1
-        }
-      }]).then((allPost) => {
-        allPost.map((item, i) => {
-          count.splice(i, 0, item.Totalcount);
+        }, {
+          $sort: {
+            _id: 1
+          }
+        }]).then((allPost) => {
+          allPost.map((item, i) => {
+            count.splice(i, 0, item.Totalcount);
+          })
+          let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', { months, count });
+          return res.send(data);
         })
-        let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', { months, count });
-        return res.send(data);
-      })
-      .catch((e) => {
-        let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
-        return res.send(data);
-      })
+        .catch((e) => {
+          let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
+          return res.send(data);
+        })
   })
 
   static getMaxPostUser = asyncWrapper(async (req, res) => {
@@ -544,7 +550,8 @@ class Admin {
       $project: {
         name: '$user.fullName',
         email: '$user.email',
-        count: '$count'
+        count: '$count',
+        userId: '$_id'
       }
     }]).then((reporteduser) => {
       let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', reporteduser);
@@ -603,6 +610,33 @@ class Admin {
 
   })
 
+  static deleteOpenReq = asyncWrapper(async (req, res) => {
+    const userData = tokenDecode(req.headers.authorization);
+    UnblockReq.find({ _id: req.params.reqId }, async function (err, userReq) {
+      // if (userReq.length > 0 && userData.userType === "Admin") {    //only Admin can delete the req
+      if (userReq.length > 0) {    // all user can delete req
+        await UnblockReq.findByIdAndDelete({ _id: mongoose.Types.ObjectId(req.params.reqId) }).then(async (delRes) => {
+          const notification = new Notification({
+            owner: userReq[0].userId,
+            postId: userReq[0].postId,
+            description: (userReq.type === "Post") ? `your repopen request for Post ${userReq[0].postId} has been terminated` : `Yoar account reopen request has been terminated`,
+          })
+          try {
+            await notification.save();
+            let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'Request deleted successfully');
+            return res.send(data);
+          } catch (err) {
+            let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, err);
+            return res.send(data);
+          }
+        })
+      }
+      else {
+        let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, 'No Post Found');
+        return res.send(data);
+      }
+    })
+  })
 }
 
 export default Admin;

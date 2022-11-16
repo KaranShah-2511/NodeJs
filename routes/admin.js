@@ -31,6 +31,8 @@ router.get('/highestreported/user', Auth , Admin.getHighestReportedUser)
 
 router.get('/inactive/user', Auth , Admin.getInactiveUser)
 
+router.delete('/openpost/req/:reqId' , Auth, Admin.deleteOpenReq)
+
 // router.get('/post/block/req', Auth , Admin.getAllReq)
 
 

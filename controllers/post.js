@@ -39,26 +39,16 @@ class Posts {
         // const post = await Post.findById(req.params.postId);
         // let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
         // return res.send(data);
-        Post.countDocuments({_id: req.params.postId}, function (err, count) {
+        Post.countDocuments({ _id: req.params.postId }, function (err, count) {
             if (count > 0) {
                 Post.aggregate([
                     {
                         $match: {
                             _id: mongoose.Types.ObjectId(req.params.postId)
                         }
-                    }, {
-                        $lookup: {
-                            from: 'users',
-                            localField: 'createdBy',
-                            foreignField: '_id',
-                            as: 'user'
-                        }
-                    }, {
-                        $unwind: {
-                            path: '$user',
-                            preserveNullAndEmptyArrays: true
-                        }
-                    }, {
+                    },
+                    ...lookup("users", "createdBy", "_id", "user"),
+                    {
                         $project: {
                             _id: '$_id',
                             title: '$title',
@@ -130,7 +120,9 @@ class Posts {
                                     PostHitCount.findOne({ $and: [{ postId: mongoose.Types.ObjectId(req.params.postId) }, { userId: mongoose.Types.ObjectId(userData._id) }] }).then(async (count) => {
                                         if (!count) {
                                             await delay(100);
-                                            await postHitCount.save();
+                                            if (!userData.userType) {
+                                                await postHitCount.save();
+                                            }
                                         }
                                     });
                                 } catch (err) {
@@ -142,8 +134,6 @@ class Posts {
                             let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, e);
                             return res.send(data);
                         });
-
-
                         // PostHitCount.findOne({ postId: mongoose.Types.ObjectId(req.params.postId), userId: mongoose.Types.ObjectId(userData._id) }).then(async (hitCount) => {
                         //     if (!hitCount) {
                         //         const postHitCount = new PostHitCount({
