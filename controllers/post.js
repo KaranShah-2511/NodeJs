@@ -120,7 +120,7 @@ class Posts {
                                     PostHitCount.findOne({ $and: [{ postId: mongoose.Types.ObjectId(req.params.postId) }, { userId: mongoose.Types.ObjectId(userData._id) }] }).then(async (count) => {
                                         if (!count) {
                                             await delay(100);
-                                            if (!userData.userType) {
+                                            if (userData.userType !== "Admin" ) {
                                                 await postHitCount.save();
                                             }
                                         }
