@@ -3,7 +3,7 @@ import Admin from '../controllers/admin.js';
 import Auth from "../middleware/authentication.js";
 const router = express.Router();
 
-router.get('/', Auth, Admin.allUser);
+router.post('/', Auth, Admin.allUser);
 
 router.get('/usercount', Auth, Admin.getUserCount); 
 
