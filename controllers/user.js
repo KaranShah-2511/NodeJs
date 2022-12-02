@@ -15,9 +15,9 @@ class Users {
         newUser.hash_password = bcrypt.hashSync(req.body.password, 10);
         newUser.save((err, user) => {
             if (err) {
-                return res.status(400).send({
-                    message: err
-                });
+                let data = Response(Constants.RESULT_CODE.ERROR, Constants.RESULT_FLAG.FAIL, 'User registered', (err));
+                return res.send(data);
+               
             } else {
                 user.hash_password = undefined;
                 let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, 'User registered', (user));

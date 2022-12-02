@@ -36,9 +36,7 @@ class Posts {
     })
 
     static getSinglePost = asyncWrapper(async (req, res) => {
-        // const post = await Post.findById(req.params.postId);
-        // let data = Response(Constants.RESULT_CODE.OK, Constants.RESULT_FLAG.SUCCESS, '', post);
-        // return res.send(data);
+      
         Post.countDocuments({ _id: req.params.postId }, function (err, count) {
             if (count > 0) {
                 Post.aggregate([
