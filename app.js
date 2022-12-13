@@ -9,14 +9,41 @@ import notFound from './middleware/notFound.js'
 import errorHandler from './middleware/error.js'
 import users from './routes/user.js'
 import posts from './routes/post.js'
+import { Server } from 'socket.io'
+import http from 'http'
+
+
 
 const app = express()
 const port = process.env.PORT
 const DATABASE_URL = process.env.DATABASE_URL
 
 app.use(cors())
+const server = http.createServer(app);
+
 app.use(express.json())
 connectDB(DATABASE_URL)
+
+const io = new Server(server, {
+    cors: {
+      origin: "http://localhost:3000",
+      methods: ["GET", "POST"],
+    },
+  });
+
+io.on("connection", (socket) => {
+    console.log(`User Connected: ${socket.id}`);
+
+    socket.on("postId_connect", (postId) => {
+        console.log('postId',postId)
+        socket.join(postId);
+    });
+
+    socket.on("send_comment", (data) => {
+        console.log('data', data)
+        socket.to(data.postId).emit("receive_comment", data);
+    });
+});
 
 app.get('/hello', (req, res) => {
     res.send('Hello World')
@@ -31,6 +58,6 @@ app.use(errorHandler)
 
 
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server listening at http://127.0.0.1:${port}`)
 })
