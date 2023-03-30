@@ -21,6 +21,8 @@ connectDB(DATABASE_URL)
 app.get('/hello', (req, res) => {
     res.send('Hello World')
 })
+// app.use('/images', express.static('./images'))
+
 
 app.use('/admin', admin)
 app.use('/tasks', tasks)
@@ -34,3 +36,9 @@ app.use(errorHandler)
 app.listen(port, () => {
     console.log(`Server listening at http://127.0.0.1:${port}`)
 })
+
+
+
+//To show image in browser
+
+// http://localhost:8000/images/1680195535444--IMG_20210205_092212.jpg
